@@ -5,32 +5,32 @@
 #include <time.h>		// rand(), srand(), time()
 #include <ctype.h>		// tolower()
 
-// ¿ØÖÆÌ¨¾ä±ú
+// æ§åˆ¶å°å¥æŸ„
 HANDLE handle;
 
-// µØÍ¼
+// åœ°å›¾
 #define ROWS 20
 #define COLS 30
 
-// ÓÃÒ»¶ÓÁĞ±£´æÉßÉíĞÅÏ¢
-// ÉßÉí³õÊ¼³¤¶ÈÎª LEN, ³õÊ¼Î»ÖÃÎª (9,9), (9,8)
+// ç”¨ä¸€é˜Ÿåˆ—ä¿å­˜è›‡èº«ä¿¡æ¯
+// è›‡èº«åˆå§‹é•¿åº¦ä¸º LEN, åˆå§‹ä½ç½®ä¸º (9,9), (9,8)
 #define LEN 2
 #define MAX_LEN ROWS * COLS
-unsigned head = 0;					// ¶ÓÍ·
-unsigned tail = LEN;				// Î²ºóÎ»ÖÃ
+unsigned head = 0;					// é˜Ÿå¤´
+unsigned tail = LEN;				// å°¾åä½ç½®
 unsigned body_r[MAX_LEN+1] = {9,9};
 unsigned body_c[MAX_LEN+1] = {9,8};
 
 
-// Ê³Îï
+// é£Ÿç‰©
 unsigned food_r = 0;
 unsigned food_c = 0;
 BOOL has_food = 0;
 
-// ·ÖÊı
+// åˆ†æ•°
 unsigned score = 0;
 
-// ĞŞ¸ÄÆÁÄ»³ß´ç
+// ä¿®æ”¹å±å¹•å°ºå¯¸
 void screen_resize(unsigned rows, unsigned cols)
 {
 	char cmd[64];
@@ -38,7 +38,7 @@ void screen_resize(unsigned rows, unsigned cols)
     system(cmd);
 }
 
-// Òş²Ø¹â±ê
+// éšè—å…‰æ ‡
 void cursor_hide()
 {
 	CONSOLE_CURSOR_INFO info;
@@ -47,7 +47,7 @@ void cursor_hide()
 	SetConsoleCursorInfo(handle, &info);
 }
 
-// ÏòÖ¸¶¨Î»ÖÃÊä³ö×Ö·û
+// å‘æŒ‡å®šä½ç½®è¾“å‡ºå­—ç¬¦
 void render(char *wch, unsigned row, unsigned col)
 {
     COORD pos = {2*col, row};
@@ -55,7 +55,7 @@ void render(char *wch, unsigned row, unsigned col)
     printf("%s", wch);
 }
 
-// ´òÓ¡·ÖÊı
+// æ‰“å°åˆ†æ•°
 void print_score()
 {
     COORD pos = {8, ROWS+1};
@@ -63,20 +63,20 @@ void print_score()
     printf("%d", score);
 }
 
-// ÅĞ¶Ï´Ë×ø±êÊÇ·ñÊÇÇ½
+// åˆ¤æ–­æ­¤åæ ‡æ˜¯å¦æ˜¯å¢™
 
 BOOL is_wall(unsigned row, unsigned col)
 {
 	return row <= 0 || row >= ROWS-1 || col <= 0 || col >= COLS-1;
 }
 
-// ÅĞ¶Ï´Ë×ø±êÊÇ·ñÊÇÊ³Îï
+// åˆ¤æ–­æ­¤åæ ‡æ˜¯å¦æ˜¯é£Ÿç‰©
 BOOL is_food(unsigned row, unsigned col)
 {
 	return has_food && row == food_r && col == food_c;
 }
 
-// ÅĞ¶Ï´Ë×ø±êÊÇ·ñÊÇÉßÉí
+// åˆ¤æ–­æ­¤åæ ‡æ˜¯å¦æ˜¯è›‡èº«
 BOOL is_body(unsigned row, unsigned col)
 {
 	unsigned i;
@@ -84,11 +84,11 @@ BOOL is_body(unsigned row, unsigned col)
 		if (row == body_r[i] && col == body_c[i])
 			break;
 
-	// i == tail µ±ÇÒ½öµ± (row, col) ÓëÉßÉí²»ÖØºÏ
+	// i == tail å½“ä¸”ä»…å½“ (row, col) ä¸è›‡èº«ä¸é‡åˆ
 	return i != tail;
 }
 
-// Éú³ÉÊ³Îï
+// ç”Ÿæˆé£Ÿç‰©
 void food_create()
 {
     if (has_food) return;
@@ -101,7 +101,7 @@ void food_create()
 	has_food = 1;
 }
 
-// ´òÓ¡µØÍ¼
+// æ‰“å°åœ°å›¾
 void map_print()
 {
     unsigned i, j;
@@ -111,15 +111,15 @@ void map_print()
         {
             if (is_wall(i, j))
             {
-				printf("¡ö");
+				printf("â– ");
 			}
 			else if (is_body(i, j))
 			{
-                printf("¡ö");
+                printf("â– ");
 			}
             else if (is_food(i, j))
 			{
-                printf("¡ô");
+                printf("â—†");
 			}
 			else
 			{
@@ -131,7 +131,7 @@ void map_print()
     printf("\nScores: 0\nUse wasd to play.\n");
 }
 
-// ³õÊ¼»¯
+// åˆå§‹åŒ–
 void game_init()
 {
     system("cls");
@@ -154,13 +154,13 @@ void game_init()
 	map_print();
 }
 
-// Ö÷Ñ­»·
+// ä¸»å¾ªç¯
 void game_play()
 {
     char key;
-	char last_key = 'd';	// ÉßÍ·³õÊ¼ÏòÓÒ
+	char last_key = 'd';	// è›‡å¤´åˆå§‹å‘å³
 
-    // ¶Á¼üÅÌ£¬²»»ØÏÔ
+    // è¯»é”®ç›˜ï¼Œä¸å›æ˜¾
     key = tolower(getch());
     while (1)
     {
@@ -187,37 +187,37 @@ void game_play()
 			case 'd': ++new_c; break;
 		}
 
-		if (is_wall(new_r, new_c))		// ×²Ç½ÁËÂğ
+		if (is_wall(new_r, new_c))		// æ’å¢™äº†å—
 		{
 			break;
 		}
-		else if (is_food(new_r, new_c))	// ³Ôµ½Ê³ÎïÁËÂğ
+		else if (is_food(new_r, new_c))	// åƒåˆ°é£Ÿç‰©äº†å—
         {
             score += 10 + rand() % 11;
 			has_food = 0;
             food_create();
-            render("¡ô", food_r, food_c);
+            render("â—†", food_r, food_c);
         }
-        else							// ÏûÈ¥Î²²¿
+        else							// æ¶ˆå»å°¾éƒ¨
         {
 			tail = (tail == 0 ? MAX_LEN : tail-1);
             render("  ", body_r[tail], body_c[tail]);
-			if (is_body(new_r, new_c))	// Ò§µ½×Ô¼ºÁËÂğ
+			if (is_body(new_r, new_c))	// å’¬åˆ°è‡ªå·±äº†å—
 				break;
         }
 
-		// ÏÖÔÚ°²È«£¬¿ÉÒÔ»æÖÆÍ·²¿
-		render("¡ö", new_r, new_c);
+		// ç°åœ¨å®‰å…¨ï¼Œå¯ä»¥ç»˜åˆ¶å¤´éƒ¨
+		render("â– ", new_r, new_c);
 
-		// ½«ĞÂ×ø±êÈë¶Ó
+		// å°†æ–°åæ ‡å…¥é˜Ÿ
 		head = (head == 0 ? MAX_LEN : head-1);
 		body_r[head] = new_r;
 		body_c[head] = new_c;
 
         print_score();
-        Sleep(32765/(score+200)+40);	// ·ÖÊıÔ½¸ß£¬ÒÆ¶¯Ô½¿ì
+        Sleep(32765/(score+200)+40);	// åˆ†æ•°è¶Šé«˜ï¼Œç§»åŠ¨è¶Šå¿«
 
-        if (kbhit())					// ÅĞ¶ÏÊÇ·ñ°´ÏÂ°´¼ü
+        if (kbhit())					// åˆ¤æ–­æ˜¯å¦æŒ‰ä¸‹æŒ‰é”®
             key = tolower(getch());
     }
 }
@@ -233,6 +233,8 @@ int main()
 {
 	handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	screen_resize(ROWS+4, COLS*2+1);
+	//system("chcp 936"); // change codepage to gbk
+	system("chcp 65001"); // change codepage to utf-8
 	cursor_hide();
 
     do {
