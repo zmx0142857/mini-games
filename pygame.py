@@ -43,7 +43,8 @@ class Console:
 
     def yes(self, prompt):
         try:
-            s = self.input(prompt + ' (y/n) ')
+            self.line_clear(self.line_input)
+            s = input(prompt + ' (y/n) ')
         except Exception:
             return False
         return len(s) != 0 and (s[0] == 'y' or s[0] == 'Y')
