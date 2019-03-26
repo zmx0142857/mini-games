@@ -67,16 +67,19 @@ class Board:
         self.x = 'x'
         self.o = 'o'
         self.empty = '.'
-        self.board = [
-            [self.empty for j in range(3)] for i in range(3)
-        ]
         self.value = [
             [4, 9, 2],
             [3, 5, 7],
             [8, 1, 6]
         ]
-        self.pos = [None, (2, 1), (0, 2), (1, 0), (0, 0), (1, 1), (2, 2),
-            (1, 2), (2, 0), (0, 1)]
+        self.pos = [ None,
+            (2, 1), (0, 2), (1, 0),
+            (0, 0), (1, 1), (2, 2),
+            (1, 2), (2, 0), (0, 1)
+        ]
+        self.board = [
+            [self.empty for j in range(3)] for i in range(3)
+        ]
         self.step = 1
         self.available = SortedSet(i for i in range(1, 10))
         self.taken = [SortedSet(), SortedSet()]
@@ -157,119 +160,111 @@ class Board:
 
 # ---- class Board ends
 
-def player_move(c, b):
-    try:
-        s = c.input(b.info())
-    except EOFError:
-        if c.yes('quit game?'):
-            exit()
+class Game:
+    def __init__(self, mode=1, level=1):
+        try:
+            self.mode = int(mode)
+            self.level = int(level)
+            if self.mode < 0 or self.mode > 3:
+                raise ValueError
+            if self.level < 0 or self.level > 2:
+                raise ValueError
+        except Exception:
+            print('invalid arguments.\n'
+                  'usage: tictactoe.py <mode> <level>\n'
+                  'mode = 0 (pvp), 1 (pvc), 2 (cvp), 3 (cvc)\n'
+                  'level = 0, 1, 2')
+            exit(1)
+        self.console = Console(line_msg=4, line_input=5)
+        self.board = Board(level)
+
+    def player_move(self):
+        try:
+            s = self.console.input(self.board.info())
+        except EOFError:
+            if self.console.yes('quit game?'):
+                exit()
+            return False
+        try:
+            line, col = map(int, s.split())
+        except ValueError:
+            self.console.msg('invalid input')
+            return False
+        try:
+            n = self.board.value[line-1][col-1]
+        except IndexError:
+            self.console.msg('index out of range')
+            return False
+        try:
+            self.board.take(n)
+        except ValueError as e:
+            self.console.msg(e)
+            return False
         return True
-    try:
-        line, col = map(int, s.split())
-    except ValueError:
-        c.msg('invalid input')
-        return True
-    try:
-        n = b.value[line-1][col-1]
-    except IndexError:
-        c.msg('index out of range')
-        return True
-    try:
-        b.take(n)
-    except ValueError as e:
-        c.msg(e)
-        return True
-    return False
 
-def computer_move(c, b):
-    n = b.ai()
-    line, col = b.pos[n]
-    sleep(0.2)
-    c.msg("computer takes %d %d" % (line+1, col+1))
+    def computer_move(self):
+        n = self.board.ai()
+        line, col = self.board.pos[n]
+        sleep(0.2)
+        self.console.msg("computer takes %d %d" % (line+1, col+1))
 
-def board_update(c, b):
-    c.cursor_goto(0)
-    print(b)
-    if b.gameover:
-        c.msg(b.gameover)
-        return True
-    return False
+    def gameover(self):
+        self.console.cursor_goto(0)
+        print(self.board)
+        if self.board.gameover:
+            self.console.msg(self.board.gameover)
+            return True
+        return False
 
-def pvp(c, level):
-    b = Board(level)
-    c.screen_clear()
-    print(b)
-    while True:
-        if player_move(c, b):
-            continue
-        if board_update(c, b):
-            break
+    def pvp(self):
+        while True:
+            if not self.player_move():
+                continue
+            if self.gameover():
+                break
 
-def pvc(c, level):
-    b = Board(level)
-    c.screen_clear()
-    print(b)
-    while True:
-        if player_move(c, b):
-            continue
-        if board_update(c, b):
-            break
-        computer_move(c, b)
-        if board_update(c, b):
-            break
+    def pvc(self):
+        while True:
+            if not self.player_move():
+                continue
+            if self.gameover():
+                break
+            self.computer_move()
+            if self.gameover():
+                break
 
-def cvp(c, level):
-    b = Board(level)
-    c.screen_clear()
-    print(b)
-    while True:
-        computer_move(c, b)
-        if board_update(c, b):
-            break
-        if player_move(c, b):
-            continue
-        if board_update(c, b):
-            break
+    def cvp(self):
+        while True:
+            self.computer_move()
+            if self.gameover():
+                break
+            while not self.player_move():
+                pass
+            if self.gameover():
+                break
 
-def cvc(c, level):
-    b = Board(level)
-    c.screen_clear()
-    print(b)
-    while True:
-        computer_move(c, b)
-        if board_update(c, b):
-            break
-        computer_move(c, b)
-        if board_update(c, b):
-            break
+    def cvc(self):
+        while True:
+            self.computer_move()
+            if self.gameover():
+                break
 
-def play(mode=1, level=1):
-    c = Console(line_msg=4, line_input=5)
-    try:
-        mode = int(mode)
-        level = int(level)
-        if mode < 0 or mode > 3:
-            raise ValueError
-        if level < 0 or level > 2:
-            raise ValueError
-    except Exception:
-        print('invalid arguments.\n'
-              'usage: tictactoe.py <mode> <level>\n'
-              'mode = 0, 1, 2, 3\n'
-              'level = 0, 1, 2\n')
-    while True:
-        if mode == 0:
-            pvp(c, level)
-        elif mode == 1:
-            pvc(c, level)
-        elif mode == 2:
-            cvp(c, level)
-        elif mode == 3:
-            cvc(c, level)
-        if not c.yes('new game? '):
-            break
+    def play(self):
+        while True:
+            self.board = Board(self.level)
+            self.console.screen_clear()
+            print(self.board)
+            if self.mode == 0:
+                self.pvp()
+            elif self.mode == 1:
+                self.pvc()
+            elif self.mode == 2:
+                self.cvp()
+            elif self.mode == 3:
+                self.cvc()
+            if not self.console.yes('new game? '):
+                break
     
 if __name__ == '__main__':
-    play(*sys.argv[1:])
-
-# ./tictactoe <mode> <level>
+    game = Game(*sys.argv[1:])
+    game.play()
