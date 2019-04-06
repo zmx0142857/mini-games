@@ -3,8 +3,12 @@
 #include <cstdlib>
 #include <ctime>
 #include <unistd.h>
+
+#ifdef __MINGW32__
 #include <windows.h>
-#include <mmsystem.h>
+#include <mmsystem.h>	// need to link libwinmm.a
+#endif
+
 using namespace std;
 
 class Alarm {
@@ -45,15 +49,17 @@ public:
 		cout << setfill('0');			// 在 cout 的数字前补 0
 		while (true) {
 			usleep(2000);				// 休息 2000 μs
-			/*
-			if (alertCount > 0) {
-				cout << bell << flush;
-				--alertCount;
-			}*/
+#ifdef __MINGW32__
             if (alertCount > 0) {
                 PlaySound("Alarm07.wav", NULL, SND_FILENAME | SND_ASYNC);
                 alertCount = 0;
             }
+#else
+			if (alertCount > 0) {
+				cout << bell << flush;
+				--alertCount;
+			}
+#endif
 			time_t cur_sec = time(NULL);
 			if (cur_sec != last_sec) {
 				update(cur_sec);
@@ -66,7 +72,7 @@ public:
 		}
 	}
 };
-//#pragma comment(lib, "winmm.lib")
+
 int main(int argc, char **argv)
 {
 	Alarm a;
