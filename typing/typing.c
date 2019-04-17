@@ -1,51 +1,184 @@
-#include <ncurses.h>
+#include <stdio.h>
+#include <termios.h>	// termios()
 #include <locale.h>		// setlocale()
 #include <ctype.h>		// isspace()
 #include <time.h>		// time()
+#include "../game.h"
 
-#define MAX_LINES 50
-#define MAX_COLS 300
-char article[MAX_LINES][MAX_COLS];
-int article_lines = 0;
-int eol[MAX_LINES] = {0};
-int len[MAX_LINES];
+#define MAX_LINES 1000
+#define MAX_COLS 500
+struct {
+	char text[MAX_LINES][MAX_COLS];
+	int lines;
+	int col[MAX_LINES];
+	int len[MAX_LINES];
+} article;
 
-void init()
+struct {
+	int correct;
+	int error;
+	int backspace;
+} cnt;
+
+void toggle_flush()
 {
-	setlocale(LC_ALL, "");	// 使用系统 locale
-	initscr();				// 初始化 ncurses
-	noecho();				// 不回显
-	cbreak();				// 立即获得输入 (除了 ctrl-c, ctrl-z)
-	keypad(stdscr, TRUE);	// 处理功能键
-	start_color();			// 启用颜色
-	init_pair(1, COLOR_RED, COLOR_BLACK);
+	static struct termios on, off;
+	static int ready = 0;
+	if (!ready) {
+		tcgetattr(0, &on);
+		off = on;
+		off.c_lflag &= ~ICANON;	// 禁用 I/O 缓冲
+		off.c_lflag |= ~ECHO;	// 无回显
+		ready = 1;
+	}
+	static int flush_on = 1;
+	if (flush_on) {
+		tcsetattr(0, TCSANOW, &off);
+	} else {
+		tcsetattr(0, TCSANOW, &on);
+	}
+	flush_on = !flush_on;
 }
 
 int load_article(char *filename)
 {
 	FILE *fin = fopen(filename, "r");
 	if (!fin) {
-		endwin();
-		printf("cannot open file '%s'. does this file exist?\n", filename);
-		return 0;
+		printf("error: cannot open file '%s'. does this file exist?\n", filename);
+		return 1;
 	}
+
 	int c;
+	article.lines = 0;
 	int i = 0;
-	attron(A_DIM);
+	printf(STYLE_DIM);
 	while ((c = fgetc(fin)) != EOF) {
+		if (article.lines == MAX_LINES) {
+			printf("\nerror: max lines (%d) reached. abort.\n", MAX_LINES);
+			fclose(fin);
+			return 2;
+		}
 		if (c == '\n') {
-			article[article_lines][i] = '\0';
-			len[article_lines++] = i;
+			article.text[article.lines][i] = '\0';
+			article.len[article.lines++] = i;
 			i = 0;
 		} else {
-			article[article_lines][i++] = c;
+			if (i == MAX_COLS) {
+				printf("\nerror: max cols (%d) reached. abort.\n", MAX_COLS);
+				fclose(fin);
+				return 3;
+			}
+			article.text[article.lines][i++] = c;
 		}
-		addch(c);
+		putchar(c);
 	}
-	attroff(A_DIM);
-	move(0, 0);
+
+	// no eol
+	if (i != 0) {
+		article.text[article.lines][i] = '\0';
+		article.len[article.lines++] = i;
+		putchar('\n');
+	}
+	printf(STYLE_RESET);
+
+	cursor_up(article.lines);
 	fclose(fin);
-	return 1;
+	return 0;
+}
+
+void play(int c)
+{
+	int line = 0, len = 0, col = 0;
+	cnt.correct = cnt.error = cnt.backspace = 0;
+	while (c != EOF) { // ctrl-d to exit
+		if (article.text[line][len] == '\0') {
+			if (c == '\r') {
+				++line;
+				len = 0;
+				col = 0;
+				putchar('\n');
+				if (line == article.lines) {
+					c = EOF;	// exit
+					continue;
+				}
+			}
+		} else if (c == '\r' || c == 127) { // newline or backspace
+			;
+		} else if (c == article.text[line][len]) { // 英文正确
+			putchar(c);
+			++cnt.correct;
+			++len;
+			++col;
+		} else if (c >= 128 && article.text[line][len] < 0
+				&& article.text[line][len+1] < 0
+				&& article.text[line][len+2] < 0) { // 中文
+			int c1 = c;
+			int c2 = getchar();
+			int c3 = getchar();
+			if ((char)c1 == article.text[line][len]
+					&& (char)c2 == article.text[line][len+1]
+					&& (char)c3 == article.text[line][len+2]) {
+				putchar(c1); putchar(c2); putchar(c3);
+				++cnt.correct;
+			} else {
+				printf(COLOR(RED));
+				putchar(c1); putchar(c2); putchar(c3);
+				printf(STYLE_RESET);
+				++cnt.error;
+			}
+			len += 3;
+			col += 2;
+		} else if (c >= 128) {		// 误在英文处输入中文
+			printf(COLOR(RED));
+			do {
+				putchar(c);
+				c = getchar();
+			} while (c >= 128);
+			printf(STYLE_RESET);
+			++cnt.error;
+			len += 2;
+			col += 2;
+			continue;
+		} else {					// 英文错误
+			if (isspace(c))
+				printf(STYLE_UNDERLINE);
+			printf(COLOR(RED));
+			putchar(c);
+			printf(STYLE_RESET);
+			++cnt.error;
+			if (article.text[line][len] < 0) {
+				putchar(' ');
+				len += 3;
+				col += 2;
+			} else {
+				++len;
+				++col;
+			}
+		}
+		c = getchar();
+	}
+	article.lines -= line;
+}
+
+void summary(time_t begin)
+{
+	int s = time(NULL) - begin;
+	int mm = s / 60;
+	int ss = s % 60;
+	int typed = cnt.correct + cnt.error;
+
+	if (article.lines > 0)
+		cursor_down(article.lines);
+	printf( "\r--------------------\n"
+			"time:      %dm %ds\n"
+			"speed:     %.2fkpm\n"
+			"accuracy:  %.2f%%\n"
+			"typed:     %d\n"
+			"correct:   %d\n"
+			"backspace: %d\n",
+		mm, ss, 60.0*typed/s, 100.0*cnt.correct/typed,
+		typed, cnt.correct,
+		cnt.backspace);
 }
 
 int main(int argc, char *argv[])
@@ -58,100 +191,18 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	init();
+	setlocale(LC_ALL, "");		// 使用系统 locale
+	int err = load_article(argv[1]);
+	if (err)
+		return err;
+	toggle_flush();
 
-	if (!load_article(argv[1]))
-		return 1;
+	int c = getchar();
+	time_t begin = time(NULL);
+	play(c);
+	summary(begin);
 
-	int y = 0, byte = 0;
-	int correct_cnt = 0, error_cnt = 0, backspace_cnt = 0;
-	int c = getch();
-	time_t timer = time(NULL);
-	while (c != 4) { // ctrl-d to exit
-		switch (c) {
-		case '\n':
-			if (article[y][byte] == '\0') {
-				getyx(stdscr, y, eol[y]);
-				byte = 0;
-				move(++y, 0);
-				if (y == article_lines) {
-					c = 4;	// exit
-					continue;
-				}
-			}
-			break;
-		case KEY_BACKSPACE:
-		case KEY_LEFT:
-		case KEY_RIGHT:
-			break;
-
-		default:
-			if (article[y][byte] == 0) {
-				;
-			} else if (c == article[y][byte]) { // 英文正确
-				addch(c);
-				++correct_cnt;
-				++byte;
-			} else if (c >= 128 && article[y][byte] < 0
-					&& article[y][byte+1] < 0
-					&& article[y][byte+2] < 0) { // 中文
-				int c1 = c;
-				int c2 = getch();
-				int c3 = getch();
-				if ((char)c1 == article[y][byte]
-						&& (char)c2 == article[y][byte+1]
-						&& (char)c3 == article[y][byte+2]) {
-					addch(c1); addch(c2); addch(c3);
-					++correct_cnt;
-				} else {
-					attron(COLOR_PAIR(1));
-					addch(c1); addch(c2); addch(c3);
-					attroff(COLOR_PAIR(1));
-					++error_cnt;
-				}
-				byte += 3;
-			} else if (c >= 128) {		// 误在英文处输入中文
-				attron(COLOR_PAIR(1));
-				do {
-					addch(c);
-					c = getch();
-				} while (c >= 128);
-				attroff(COLOR_PAIR(1));
-				byte += 2;
-				++error_cnt;
-				continue;
-			} else {					// 英文错误
-				if (isspace(c))
-					attron(A_UNDERLINE);
-				attron(COLOR_PAIR(1));
-				addch(c);
-				attroff(A_UNDERLINE | COLOR_PAIR(1));
-				++error_cnt;
-				++byte;
-				if (article[y][byte] < 0) {
-					addch(' ');
-					byte += 2;
-				}
-			}
-		}
-		c = getch();
-	}
-	int s = time(NULL) - timer;
-	int mm = s / 60;
-	int ss = s % 60;
-	int typed_cnt = correct_cnt + error_cnt;
-
-	printw( "\n--------------------\n"
-			"time:      %dm %ds\n"
-			"speed:     %.2fkpm\n"
-			"accuracy:  %.2f%%\n"
-			"typed:     %d\n"
-			"correct:   %d\n"
-			"backspace: %d",
-		mm, ss, 60.0*typed_cnt/s, 100.0*correct_cnt/typed_cnt,
-		typed_cnt, correct_cnt,
-		backspace_cnt);
-	getch();
-	endwin();
+	toggle_flush();
 	return 0;
 }
+

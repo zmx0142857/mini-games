@@ -1,86 +1,32 @@
-// game.h: header file for games written in C++.
-#ifndef game_h
-#define game_h
+#ifndef Game_h
+#define Game_h
 
-#include <iostream>
-#include <cstring>
-#include <sstream>
+#define STYLE_RESET			"\033[0m"
+#define STYLE_BRIGHT		"\033[1m"
+#define STYLE_DIM			"\033[2m"
+#define STYLE_UNDERLINE		"\033[4m"
+#define STYLE_BLINK			"\033[5m"
+#define STYLE_REVERSE		"\033[7m"
+#define STYLE_HIDDEN		"\033[8m"
 
-#ifdef __APPLE__
-#error "Mac OS is currently not supported"
-#endif
+#define BLACK				"0"
+#define RED					"1"
+#define GREEN				"2"
+#define YELLOW				"3"
+#define BLUE				"4"
+#define MAGENTA				"5"
+#define CYAN				"6"
+#define WHITE				"7"
+#define COLOR(color)		"\033[3" color "m"
+#define COLORS(fg, bg)		"\033[3" fg ";4" bg "m"
 
-#ifdef __linux__
-#error "linux is currently not supported"
-#endif
+#define LINE_CLEAR			"\033[K"
 
-#ifdef __MINGW32__
-#include <windows.h>
-#include <conio.h>
+#define cursor_goto(y,x)	printf("\033[" #y ";" #x "H")
+#define cursor_cr()			pritnf("\r")
+#define cursor_up(n)		printf("\033[%dA", n)
+#define cursor_down(n)		printf("\033[%dB", n)
+#define cursor_right(n)		printf("\033[%dC", n)
+#define cursor_left(n)		printf("\033[%dD", n)
 
-namespace zmx
-{
-
-typedef unsigned short Uint;
-typedef short Sint;
-enum color{	x000000, x000080, x008000, x008080,
-			x800000, x800080, x808000, xc0c0c0,
-			x808080, x0000ff, x00ff00, x00ffff,
-			xff0000, xff00ff, xffff00, xffffff};
-
-void keep(Sint *ptr, Sint inf, Sint sup); // keep *ptr in range [inf, sup]
-
-class Game
-{
-	public:
-		Game(): game_over(false) {}
-		bool game_over;
-};
-
-class Screen
-{
-	public:
-		Screen(Uint w, Uint h) { this->resize(w, h); }
-
-		void resize(Uint w, Uint h);
-		void set_cursor(Sint x, Sint y) const;
-		void set_color(Uint bg, Uint fg=xffffff, bool cls=true) const;
-		void loading(Uint loop=3);
-		static void clear() { system("cls"); }
-
-	private:
-		Uint width;
-		Uint height;
-		HANDLE handle;
-};
-
-}; // namespace zmx
-
-#endif // __MINGW32__
-
-#endif // game_h
-
-
-/* game.h example
-
-#include "game.h"
-using namespace std;
-using namespace zmx;
-
-int main()
-{
-    Game g;
-    Screen sc(40, 20);
-    sc.loading();
-    sc.set_color(x008080, xc0c0c0);
-    for (Uint i = 0; !g.game_over; ++i)
-    {
-        cout << i << endl;
-        char key = getch();
-        if (key == 27)
-            g.game_over = true;
-    }
-    return 0;
-}
-
-*/
+#endif // Game_h
