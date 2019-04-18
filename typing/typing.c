@@ -107,12 +107,14 @@ void print_article(int line)
 void play(int c)
 {
 	int line = 0, col = 0;
-	//int x = 0; // on display, useful for undoing
+	int x = 0; // on display, useful for undoing
 	cnt.correct = cnt.error = cnt.backspace = 0;
 	undo.top = 0;
 	while (c != EOF) { // ctrl-d to exit
 		if (c == 127) { // backspace
-			if (undo.top > 0) {
+			get_ttysize();
+			if (undo.top > 0 && (x % tty.ws_col > 0 || x == 0)) {
+			++cnt.backspace;
 			enum Record record = undo.stack[--undo.top];
 			switch (record) {
 				case C1: case E1:
@@ -121,7 +123,7 @@ void play(int c)
 					else
 						--cnt.error;
 					--col;
-					//--x;
+					--x;
 					cursor_left(1);
 					printf(STYLE_DIM);
 					putchar(article.text[line][col]);
@@ -134,7 +136,7 @@ void play(int c)
 					else
 						--cnt.error;
 					col -= 3;
-					//x -= 2;
+					x -= 2;
 					cursor_left(2);
 					printf(STYLE_DIM);
 					putchar((int)article.text[line][col]);
@@ -146,7 +148,7 @@ void play(int c)
 				case E3: // 误在英文处输入中文
 					--cnt.error;
 					col -= 2;
-					//x -= 2;
+					x -= 2;
 					cursor_left(2);
 					printf(STYLE_DIM);
 					putchar(article.text[line][col]);
@@ -157,7 +159,7 @@ void play(int c)
 				case E4: // 误在中文处输入英文
 					--cnt.error;
 					col -= 3;
-					//x -= 2;
+					x -= 2;
 					cursor_left(2);
 					printf(STYLE_DIM);
 					putchar((int)article.text[line][col]);
@@ -167,9 +169,8 @@ void play(int c)
 					cursor_left(2);
 					break;
 				case CR:
-					get_ttysize();
 					col = article.cols[--line];
-					//x = article.x[line];
+					x = article.x[line];
 					cursor_up(1);
 					cursor_right(article.x[line] % tty.ws_col);
 					break;
@@ -182,7 +183,7 @@ void play(int c)
 				undo.stack[undo.top++] = CR;
 				++line;
 				col = 0;
-				//x = 0;
+				x = 0;
 				putchar('\n');
 				print_article(line);
 				if (line == article.lines) {
@@ -197,7 +198,7 @@ void play(int c)
 			putchar(c);
 			++cnt.correct;
 			++col;
-			//++x;
+			++x;
 		} else if (c >= 128 && article.text[line][col] < 0
 				&& article.text[line][col+1] < 0
 				&& article.text[line][col+2] < 0) { // 中文
@@ -218,7 +219,7 @@ void play(int c)
 				++cnt.error;
 			}
 			col += 3;
-			//x += 2;
+			x += 2;
 		} else if (c >= 128) {		// 误在英文处输入中文
 			undo.stack[undo.top++] = E3;
 			printf(COLOR(RED));
@@ -229,7 +230,7 @@ void play(int c)
 			printf(STYLE_RESET);
 			++cnt.error;
 			col += 2;
-			//x += 2;
+			x += 2;
 			continue;
 		} else {					// 英文错误
 			if (isspace(c))
@@ -242,11 +243,11 @@ void play(int c)
 				undo.stack[undo.top++] = E4;
 				putchar(' ');
 				col += 3;
-				//x += 2;
+				x += 2;
 			} else {
 				undo.stack[undo.top++] = E1;
 				++col;
-				//++x;
+				++x;
 			}
 		}
 		c = getchar();
