@@ -80,7 +80,8 @@ int load_article(char *filename)
 void print_article(int line)
 {
 	static int i = 0;
-	if (i < line + 4) { // load on reaching last 3 lines
+	// load on reaching last 3 lines
+	if (i < line + 4 && i < article.lines) {
 		get_ttysize();
 		int j = article.x[i] / tty.ws_col + 1;
 		printf(STYLE_DIM);
