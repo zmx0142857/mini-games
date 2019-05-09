@@ -7,6 +7,7 @@
 #include <unistd.h>		// sleep()
 #include <stdbool.h>	// bool
 #include <signal.h>		// signal()
+#include <fcntl.h>		// fcntl()
 
 /* windows */
 
@@ -16,14 +17,9 @@
 #include <windows.h>
 
 HANDLE cmd;
-#define game_init()\
-	do {\
-		cmd = GetStdHandle(STD_OUTPUT_HANDLE);\
-		signal(SIGINT, SIG_IGN);\
-	} while (0)
+#define toggle_flush()
 
 #define screen_clear()		system("cls")
-//#define sleep(ms)			Sleep(ms)
 
 #define set_color(fg)		SetConsoleTextAttribute(cmd, fg)
 #define set_colors(fg, bg)	SetConsoleTextAttribute(cmd, (bg<<4)|fg)
@@ -63,11 +59,29 @@ void screen_size(unsigned height, unsigned width)
 	screen_clear();
 }
 
+void cursor_hide()
+{
+	CONSOLE_CURSOR_INFO info;
+	info.dwSize = 100;
+	info.bVisible = FALSE;
+	SetConsoleCursorInfo(cmd, &info);
+}
+
 #define cursor_goto(y,x)\
 	do {\
 		COORD pos = {x, y};\
 		SetConsoleCursorPosition(cmd, pos);\
 	} while (0)
+
+#define game_init()\
+	do {\
+		cmd = GetStdHandle(STD_OUTPUT_HANDLE);\
+		signal(SIGINT, SIG_IGN);\
+		system("chcp 65001");\
+		cursor_hide();\
+	} while (0)
+
+#define game_over()		system("chcp 936")
 
 #endif // __MINGW32__
 
@@ -78,12 +92,8 @@ void screen_size(unsigned height, unsigned width)
 #include <sys/ioctl.h>	// winsize, ioctl()
 #include <termios.h>	// termios
 
-#define game_init()			signal(SIGINT, SIG_IGN)
-
 struct winsize tty;
 #define get_ttysize()		ioctl(0, TIOCGWINSZ, &tty)
-#define screen_size(y, x)
-#define Sleep(ms)			usleep(ms*1000)
 
 // enable/disable buffered I/O
 void toggle_flush()
@@ -91,17 +101,16 @@ void toggle_flush()
 	static struct termios on, off;
 	static int ready = 0;
 	if (!ready) {
-		tcgetattr(0, &on);
+		tcgetattr(STDIN_FILENO, &on);
 		off = on;
-		off.c_lflag &= ~ICANON;	// 禁用 I/O 缓冲
-		off.c_lflag |= ~ECHO;	// 无回显
+		off.c_lflag &= ~(ICANON | ECHO);	// 禁用 I/O 缓冲, 无回显
 		ready = 1;
 	}
 	static int flush_on = 1;
 	if (flush_on) {
-		tcsetattr(0, TCSANOW, &off);
+		tcsetattr(STDIN_FILENO, TCSANOW, &off);
 	} else {
-		tcsetattr(0, TCSANOW, &on);
+		tcsetattr(STDIN_FILENO, TCSANOW, &on);
 	}
 	flush_on = !flush_on;
 }
@@ -113,6 +122,24 @@ int getch()
 	toggle_flush();
 	return ret;
 }
+
+int kbhit() {
+	int oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+	fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+	int ch = getch();
+	fcntl(STDIN_FILENO, F_SETFL, oldf);
+	if (ch == EOF)
+		return 0;
+	ungetc(ch, stdin);
+	return ch;
+}
+
+#define Sleep(ms)\
+	do {\
+		toggle_flush();\
+		usleep((ms)*1000);\
+		toggle_flush();\
+	} while (0)
 
 // POSIX escape sequences
 
@@ -155,6 +182,24 @@ int getch()
 #define cursor_down(n)		printf("\033[%dB", n)
 #define cursor_right(n)		printf("\033[%dC", n)
 #define cursor_left(n)		printf("\033[%dD", n)
+#define cursor_hide()		printf("\033[?25l");
+#define cursor_show()		printf("\033[?25h");
+
+void screen_size(unsigned height, unsigned width)
+{
+	char buf[100];
+	sprintf(buf, "resize -s %d %d", height, width);
+	system(buf);
+	screen_clear();
+}
+
+#define game_init()\
+	do {\
+		signal(SIGINT, SIG_IGN);\
+		cursor_hide();\
+	} while (0)
+
+#define game_over()			cursor_show();
 
 #endif // __linux__
 
@@ -162,7 +207,6 @@ int getch()
 	do {\
 		cursor_goto(y, x);\
 		printf(args);\
-		cursor_goto(0, 0);\
 	} while (0)
 
 #define color_print(fg, args...)\
@@ -208,5 +252,17 @@ void play_loading(unsigned loop)
     }
 	screen_clear();
 }
+
+/* map drawing */
+
+#define BLANK "  "
+#ifdef __MINGW32__
+#define SQUARE "■"
+#define DIAMOND "◆"
+#endif
+#ifdef __linux__
+#define SQUARE "■ "
+#define DIAMOND "◆ "
+#endif
 
 #endif // Game_h
