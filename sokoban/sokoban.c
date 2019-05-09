@@ -13,17 +13,6 @@
 #define BOX_ON_STAR '*'
 #define STAR        '.'
 
-#ifdef __MINGW32__
-#define WALL_SHOWN "█"
-#define STAR_SHOWN "★"
-#define ARROWS_SHOWN "↑←↓→"
-#endif
-#ifdef __linux__
-#define WALL_SHOWN "██"
-#define STAR_SHOWN "★ "
-#define ARROWS_SHOWN "↑ ← ↓ → "
-#endif
-
 // 全局变量
 char map[MAP_H][MAP_W] = {{0}};			// 地图
 char map_copy[MAP_H][MAP_W] = {{0}};	// 地图的副本，用于还原被抹去的星形记号
@@ -45,10 +34,10 @@ void map_print()
         for (int j = 0; j < MAP_W; ++j)
             switch (map[i][j]) {
                 case HERO: color_print(FG_CYAN, "囧"); break;
-                case WALL: color_print(FG_BLACK, WALL_SHOWN);  break;
+                case WALL: color_print(FG_BLACK, SYM_BLOCK);  break;
                 case BOX:  color_print(FG_BLACK, "田"); break;
                 case BOX_ON_STAR: color_print(FG_YELLOW, "田"); break;
-				case STAR: color_print(FG_YELLOW, STAR_SHOWN);  break;
+				case STAR: color_print(FG_YELLOW, SYM_STAR);  break;
                 default: printf("  ");
             }
 	color_print(FG_WHITE,
@@ -99,19 +88,19 @@ void scene_help()
 	color_print(FG_CYAN,  "    囧    ");
 	color_print(FG_WHITE, "    你\n\n");
 
-	color_print(FG_BLACK, "    " WALL_SHOWN "    ");
+	color_print(FG_BLACK, "    " SYM_BLOCK "    ");
 	color_print(FG_WHITE, "    墙\n\n");
 
 	color_print(FG_BLACK, "    田    ");
 	color_print(FG_WHITE, "    箱子 你无法同时推动两个箱子！\n\n");
 
-	color_print(FG_YELLOW,"    " STAR_SHOWN "    ");
+	color_print(FG_YELLOW,"    " SYM_STAR "    ");
 	color_print(FG_WHITE, "    目标 将所有箱子推到目标上！\n\n");
 
 	color_print(FG_YELLOW,"    田    ");
 	color_print(FG_WHITE, "    就位的箱子\n\n");
 
-	printf("    " ARROWS_SHOWN "  移动\n\n"
+	printf("    " SYM_ARROWS "  移动\n\n"
 	       "    R         重新来过\n\n"
 	       "    <ESC>     回主画面\n");
 
@@ -299,18 +288,19 @@ void scene_level_select()
 
 int main()
 {
-	char ch = ' ';
 	game_init();
 	screen_size(20, 48);
-    while (1) {
+	bool is_game_over = false;
+    while (!is_game_over) {
         scene_welcome();
-		ch = getch();
-        switch (ch) {
+        switch (getch()) {
             case '1': play("1"); break;
             case '2': scene_level_select();  break;
-            case '3': scene_help();  break;
-            case '4': return 0;
+            case '3': scene_help(); break;
+            case '4': is_game_over = true; break;
+			default: continue;
         }
     }
+	game_over();
     return 0;
 }

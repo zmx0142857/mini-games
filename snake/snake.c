@@ -70,13 +70,13 @@ void map_print()
     for (y = 0; y != ROWS; ++y) {
         for (x = 0; x != COLS; ++x) {
             if (is_wall(y, x))
-				printf(SQUARE);
+				printf(SYM_SQUARE);
 			else if (is_body(y, x))
-				printf(SQUARE);
+				printf(SYM_SQUARE);
             else if (is_food(y, x))
-                printf(DIAMOND);
+                printf(SYM_DIAMOND);
 			else
-				printf(BLANK);
+				printf(SYM_BLANK);
         }
 		putchar('\n');
     }
@@ -140,16 +140,16 @@ void play()
 			mvprint(ROWS+1, 8, "%d", score);
 			food.exist = false;
             food_create();
-            mvprint(food.y, 2*food.x, DIAMOND);
+            mvprint(food.y, 2*food.x, SYM_DIAMOND);
         } else {							// 消去尾部
 			snake.tail = (snake.tail == 0 ? MAX_LEN : snake.tail-1);
-            mvprint(snake.body.y[snake.tail], 2*snake.body.x[snake.tail], BLANK);
+            mvprint(snake.body.y[snake.tail], 2*snake.body.x[snake.tail], SYM_BLANK);
 			if (is_body(new_y, new_x))		// 咬到自己了吗
 				break;
         }
 
 		// 现在安全，可以绘制头部
-		mvprint(new_y, 2*new_x, SQUARE);
+		mvprint(new_y, 2*new_x, SYM_SQUARE);
 
 		// 将新坐标入队
 		snake.head = (snake.head == 0 ? MAX_LEN : snake.head-1);

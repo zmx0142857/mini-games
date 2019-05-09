@@ -9,7 +9,7 @@
 #include <signal.h>		// signal()
 #include <fcntl.h>		// fcntl()
 
-/* windows */
+/******** windows ********/
 
 #ifdef __MINGW32__
 
@@ -67,6 +67,8 @@ void cursor_hide()
 	SetConsoleCursorInfo(cmd, &info);
 }
 
+#define cursor_show()
+
 #define cursor_goto(y,x)\
 	do {\
 		COORD pos = {x, y};\
@@ -81,11 +83,15 @@ void cursor_hide()
 		cursor_hide();\
 	} while (0)
 
-#define game_over()		system("chcp 936")
+#define game_over()\
+	do {\
+		system("chcp 936");\
+		cursor_show();\
+	} while (0)
 
 #endif // __MINGW32__
 
-// ---- linux -------------------------------------------------
+/******** linux ********/
 
 #ifdef __linux__
 
@@ -199,7 +205,7 @@ void screen_size(unsigned height, unsigned width)
 		cursor_hide();\
 	} while (0)
 
-#define game_over()			cursor_show();
+#define game_over()			cursor_show()
 
 #endif // __linux__
 
@@ -253,16 +259,24 @@ void play_loading(unsigned loop)
 	screen_clear();
 }
 
-/* map drawing */
+/******** symbols ********/
 
-#define BLANK "  "
-#ifdef __MINGW32__
-#define SQUARE "■"
-#define DIAMOND "◆"
-#endif
 #ifdef __linux__
-#define SQUARE "■ "
-#define DIAMOND "◆ "
+	#define SYM_FILL " "
+	#define SYM_BLOCK "██"
+#else
+	#define SYM_FILL
+	#define SYM_BLOCK "█"
 #endif
+
+#define SYM_BLANK "  " // no fill!
+#define SYM_SQUARE "■" SYM_FILL
+#define SYM_DIAMOND "◆" SYM_FILL
+#define SYM_STAR "★" SYM_FILL
+#define SYM_ARROW_UP "↑" SYM_FILL
+#define SYM_ARROW_LEFT "←" SYM_FILL
+#define SYM_ARROW_DOWN "↓" SYM_FILL
+#define SYM_ARROW_RIGHT "→" SYM_FILL
+#define SYM_ARROWS SYM_ARROW_LEFT SYM_ARROW_DOWN SYM_ARROW_UP SYM_ARROW_RIGHT
 
 #endif // Game_h
