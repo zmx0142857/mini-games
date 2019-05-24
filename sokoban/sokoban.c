@@ -6,16 +6,16 @@
 #define MAP_W       17
 #define MAP_H       13
 
-#define SPACE       ' '
-#define WALL        '#'
-#define HERO        '@'
-#define BOX         '$'
-#define BOX_ON_STAR '*'
-#define STAR        '.'
+#define SPACE			' '
+#define WALL			'#'
+#define HERO			'@'
+#define BOX				'$'
+#define STAR			'.'
+#define BOX_ON_STAR		'*'
+#define HERO_ON_STAR	'!'
 
 // 全局变量
 char map[MAP_H][MAP_W] = {{0}};			// 地图
-char map_copy[MAP_H][MAP_W] = {{0}};	// 地图的副本，用于还原被抹去的星形记号
 int hero[2] = {0};						// 人的行列坐标分别是 hero[0], hero[1]
 #define hero_y hero[0]
 #define hero_x hero[1]
@@ -24,16 +24,17 @@ char level_name[256];					// 关卡名
 char file_name[256];					// 关卡文件
 int move_cnt = 0;						// 移动的次数
 int push_cnt = 0;						// 推箱子的次数
-bool game_won = 0;						// 关卡是否结束?
+int misplaced_box_cnt = 0;				// 未归位的箱子数
 
 // 函数
 
 void map_print()
 {
-    for (int i = 0; i < MAP_H; ++i, printf("\n"))
+    for (int i = 0; i < MAP_H; ++i, putchar('\n'))
         for (int j = 0; j < MAP_W; ++j)
             switch (map[i][j]) {
-                case HERO: color_print(FG_CYAN, "囧"); break;
+				case HERO: case HERO_ON_STAR:
+					color_print(FG_CYAN, "囧"); break;
                 case WALL: color_print(FG_BLACK, SYM_BLOCK);  break;
                 case BOX:  color_print(FG_BLACK, "田"); break;
                 case BOX_ON_STAR: color_print(FG_YELLOW, "田"); break;
@@ -113,36 +114,34 @@ bool level_load()
 	FILE *fin = fopen(file_name, "r");
 	if (!fin)
 		return 0;
+
 	memset(map, SPACE, sizeof(map));
-	memset(map_copy, SPACE, sizeof(map_copy));
+	misplaced_box_cnt = 0;
+    move_cnt = 0;
+    push_cnt = 0;
+
 	int ch, x = 0, y = 0;
 	while ((ch = fgetc(fin)) != EOF) {
 		switch (ch) {
 			case '\n':
 				x = 0;
 				++y;
-				break;
-			case HERO:
+				continue;
+			case HERO: case HERO_ON_STAR:
 				hero_y = y;
 				hero_x = x;
-				map[y][x++] = ch;
 				break;
-			case STAR: case BOX_ON_STAR:
-				map_copy[y][x] = STAR;
-				map[y][x++] = ch;
+			case STAR: case WALL: case BOX_ON_STAR:
 				break;
-			case WALL: case BOX:
-				map[y][x++] = ch;
+			case BOX:
+				++misplaced_box_cnt;
 				break;
 			default:
-				map[y][x++] = SPACE;
+				ch = SPACE;
 		}
+		map[y][x++] = ch;
 	}
 	fclose(fin);
-
-    move_cnt = 0;
-    push_cnt = 0;
-    game_won = 0;
 
 	Sleep(255);
 	screen_clear();
@@ -152,12 +151,7 @@ bool level_load()
 
 bool is_game_won()
 {
-	int i, j;
-	for (i = 0; i < MAP_H; ++i)
-		for (j = 0; j < MAP_W; ++j)
-			if (map[i][j] == BOX)
-				return 0;
-    return 1;
+	return misplaced_box_cnt == 0;
 }
 
 // 若要回到主画面, 则返回 1
@@ -194,36 +188,41 @@ bool control()
         int next_y = hero_y + dy;
         int next_x = hero_x + dx;
 
-        bool move = map[next_y][next_x] == SPACE
-                 || map[next_y][next_x] == STAR;
-        bool push = map[next_y][next_x] == BOX
-                 ||	map[next_y][next_x] == BOX_ON_STAR;
-        bool has_space = map[next_y + dy][next_x + dx] == SPACE;
-        bool has_star = map[next_y + dy][next_x + dx] == STAR;
+		bool hero_on_star = map[hero_y][hero_x] == HERO_ON_STAR;
+        bool next_space = map[next_y][next_x] == SPACE;
+        bool next_star = map[next_y][next_x] == STAR;
+        bool push_space = map[next_y][next_x] == BOX;
+        bool push_star = map[next_y][next_x] == BOX_ON_STAR;
+        bool push_to_space = map[next_y + dy][next_x + dx] == SPACE;
+        bool push_to_star = map[next_y + dy][next_x + dx] == STAR;
         bool update_hero = 0;
 
-        if (move) {
+        if (next_space || next_star) {
             update_hero = 1;
-        } else if (push && (has_space || has_star)) {
+        } else if ((push_space || push_star)
+				&& (push_to_space || push_to_star)) {
             update_hero = 1;
-            map[next_y + dy][next_x + dx] = has_star ? BOX_ON_STAR : BOX;
+            map[next_y + dy][next_x + dx] = push_to_star ? BOX_ON_STAR : BOX;
             color_mvprint(
-				(has_star ? FG_YELLOW : FG_BLACK),
+				(push_to_star ? FG_YELLOW : FG_BLACK),
 				next_y + dy, 2*(next_x + dx),
 				"田"
 			);
-            ++push_cnt;
+
+			if (push_star)
+				++misplaced_box_cnt;
+			if (push_to_star)
+				--misplaced_box_cnt;
+			color_mvprint(FG_WHITE, MAP_H + 2, 30, "%2d", ++push_cnt);
         }
 
         if (update_hero) {
-            // map_copy的真正用意：恢复被抹去的星记号
-            bool star = map_copy[hero_y][hero_x] == STAR;
-            map[hero_y][hero_x] = star ? STAR : SPACE;
-            map[next_y][next_x] = HERO;
+            map[hero_y][hero_x] = hero_on_star ? STAR : SPACE;
+            map[next_y][next_x] = next_star || push_star ? HERO_ON_STAR : HERO;
             color_mvprint(
 				FG_YELLOW,
 				hero_y, 2*hero_x,
-				star ? "★" : "  "
+				hero_on_star ? "★" : "  "
 			);
             color_mvprint(
 				FG_CYAN,
@@ -232,12 +231,7 @@ bool control()
 			);
             hero_y += dy;
             hero_x += dx;
-            ++move_cnt;
-
-			game_won = is_game_won();
-			set_color(FG_WHITE);
-			mvprint(MAP_H + 2, 20, "%2d", move_cnt);
-			mvprint(MAP_H + 2, 30, "%2d", push_cnt);
+			color_mvprint(FG_WHITE, MAP_H + 2, 20, "%2d", ++move_cnt);
         }
     }
     return 0;
@@ -262,7 +256,7 @@ void play(const char *levelname)
 			do {
 				if (control())
 					return;
-			} while (!game_won);
+			} while (!is_game_won());
 			sprintf(file_name, "level/%03d.level", ++i);
 			sprintf(level_name, "%d", i);
 		}
@@ -272,7 +266,7 @@ void play(const char *levelname)
 			do {
 				if (control())
 					return;
-			} while (!game_won);
+			} while (!is_game_won());
 		}
 	}
 }

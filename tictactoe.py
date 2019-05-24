@@ -3,7 +3,7 @@
 
 """tic tac toe"""
 
-from pygame import Console
+from game import Console
 from time import sleep
 from random import choice
 import sys
