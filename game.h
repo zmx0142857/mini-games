@@ -176,18 +176,18 @@ int kbhit() {
 
 #define COLOR(fg)			"\033[" fg "m"
 #define COLORS(fg, bg)		"\033[" fg ";" bg "m"
-#define set_color(fg)		printf("\033[%sm", fg)
-#define set_colors(fg, bg)	printf("\033[%s;%sm", fg, bg)
+#define set_color(fg)		printf("\033[%sm", (fg))
+#define set_colors(fg, bg)	printf("\033[%s;%sm", (fg), (bg))
 
 #define screen_clear()		printf("\033[2J\033[1;1H")
 #define line_clear()		printf("\033[K")
 
-#define cursor_goto(y,x)	printf("\033[%d;%dH", y+1, x+1)
+#define cursor_goto(y,x)	printf("\033[%d;%dH", (y)+1, (x)+1)
 #define cursor_cr()			pritnf("\r")
-#define cursor_up(n)		printf("\033[%dA", n)
-#define cursor_down(n)		printf("\033[%dB", n)
-#define cursor_right(n)		printf("\033[%dC", n)
-#define cursor_left(n)		printf("\033[%dD", n)
+#define cursor_up(n)		printf("\033[%dA", (n))
+#define cursor_down(n)		printf("\033[%dB", (n))
+#define cursor_right(n)		printf("\033[%dC", (n))
+#define cursor_left(n)		printf("\033[%dD", (n))
 #define cursor_hide()		printf("\033[?25l");
 #define cursor_show()		printf("\033[?25h");
 
@@ -261,6 +261,10 @@ void play_loading(unsigned loop)
 
 /******** symbols ********/
 
+#define SYM_BLANK "  "
+#define SYM_BLOCK_BRACK "[]"
+#define SYM_CIRCLE_PAREN "()"
+
 #ifdef __linux__
 	#define SYM_FILL " "
 	#define SYM_BLOCK "██"
@@ -269,7 +273,6 @@ void play_loading(unsigned loop)
 	#define SYM_BLOCK "█"
 #endif
 
-#define SYM_BLANK "  " // no fill!
 #define SYM_SQUARE "■" SYM_FILL
 #define SYM_DIAMOND "◆" SYM_FILL
 #define SYM_STAR "★" SYM_FILL
