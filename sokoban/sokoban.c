@@ -35,8 +35,8 @@ void map_print()
             switch (map[i][j]) {
 				case HERO: case HERO_ON_STAR:
 					color_print(FG_CYAN, "囧"); break;
-                case WALL: color_print(FG_BLACK, SYM_BLOCK);  break;
-                case BOX:  color_print(FG_BLACK, "田"); break;
+                case WALL: color_print(FG_WHITE, SYM_BLOCK);  break;
+                case BOX:  color_print(FG_WHITE, "田"); break;
                 case BOX_ON_STAR: color_print(FG_YELLOW, "田"); break;
 				case STAR: color_print(FG_YELLOW, SYM_STAR);  break;
                 default: printf("  ");
@@ -89,10 +89,10 @@ void scene_help()
 	color_print(FG_CYAN,  "    囧    ");
 	color_print(FG_WHITE, "    你\n\n");
 
-	color_print(FG_BLACK, "    " SYM_BLOCK "    ");
+	color_print(FG_WHITE, "    " SYM_BLOCK "    ");
 	color_print(FG_WHITE, "    墙\n\n");
 
-	color_print(FG_BLACK, "    田    ");
+	color_print(FG_WHITE, "    田    ");
 	color_print(FG_WHITE, "    箱子 你无法同时推动两个箱子！\n\n");
 
 	color_print(FG_YELLOW,"    " SYM_STAR "    ");
@@ -204,7 +204,7 @@ bool control()
             update_hero = 1;
             map[next_y + dy][next_x + dx] = push_to_star ? BOX_ON_STAR : BOX;
             color_mvprint(
-				(push_to_star ? FG_YELLOW : FG_BLACK),
+				(push_to_star ? FG_YELLOW : FG_WHITE),
 				next_y + dy, 2*(next_x + dx),
 				"田"
 			);
