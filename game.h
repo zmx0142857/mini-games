@@ -282,4 +282,6 @@ void play_loading(unsigned loop)
 #define SYM_ARROW_RIGHT "→" SYM_FILL
 #define SYM_ARROWS SYM_ARROW_LEFT SYM_ARROW_DOWN SYM_ARROW_UP SYM_ARROW_RIGHT
 
+#define KEY_ESC 27
+
 #endif // Game_h
