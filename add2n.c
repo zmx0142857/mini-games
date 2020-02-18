@@ -23,7 +23,8 @@ char **table;
 int al, ar, bl, br;
 int cnt = 0;
 int collision = 0;
-char buf[10];
+#define BUF_SIZE 64
+char buf[BUF_SIZE];
 
 #define status(AL,AR,BL,BR) al==AL && ar==AR && bl==BL && br==BR
 
@@ -195,6 +196,12 @@ void build_table()
 	if (cnt < bound) return;
 }
 
+void discard_line()
+{
+	while (buf[strlen(buf)-1] != '\n')
+		fgets(buf, BUF_SIZE, stdin);
+}
+
 void play()
 {
 	srand(time(NULL));
@@ -208,55 +215,42 @@ void play()
 	"will you go first? [y/n] ", N, N, N);
 
 	al = ar = bl = br = 1;
-	fgets(buf, 3, stdin);
-	printf("you:      %d %d\n", al, ar);
-	if (buf[0] == 'n' || buf[0] == 'N')
-		your_turn = false;
-	else 
-		printf("computer: %d %d\n", bl, br);
+	while (true) {
+		fgets(buf, 1+2, stdin); // one is for '\n', the other for '\0'
+		if (strcmp(buf, "n\n") == 0 || strcmp(buf, "N\n") == 0)
+			your_turn = false;
+		else if (strcmp(buf, "y\n") == 0 || strcmp(buf, "Y\n") == 0)
+			printf("computer: %d %d\n", bl, br);
+		else {
+			puts("invalid input");
+			printf("will you go first? [y/n] ");
+			discard_line();
+			continue;
+		}
+		break;
+	}
 
+	printf("you:      %d %d\n", al, ar);
 	int flag = 0;
 	while (!flag) {
 		if (your_turn) {
 			printf("> ");
-			if (!fgets(buf, 4, stdin)) {
+			discard_line();
+			if (!fgets(buf, 2+2, stdin)) {
 				break;
 			}
-			if (buf[0] == 'l') {
-				if (al >= N) {
+			int *a, *b;
+			if (buf[2] == '\n' && (
+				(buf[0] == 'l' && al < N && (a = &al))
+				|| (buf[0] == 'r' && ar < N && (a = &ar))
+			)) {
+				if ((buf[1] == 'l' && bl < N && (b = &bl))
+					|| (buf[1] == 'r' && br < N && (b = &br))
+				) {
+					*a += *b;
+				} else {
 					puts("invalid input");
 					continue;
-				}
-				if (buf[1] == 'l') {
-					if (bl >= N) {
-						puts("invalid input");
-						continue;
-					}
-					al += bl;
-				} else if (buf[1] == 'r') {
-					if (br >= N) {
-						puts("invalid input");
-						continue;
-					}
-					al += br;
-				}
-			} else if (buf[0] == 'r') {
-				if (ar >= N) {
-					puts("invalid input");
-					continue;
-				}
-				if (buf[1] == 'l') {
-					if (bl >= N) {
-						puts("invalid input");
-						continue;
-					}
-					ar += bl;
-				} else if (buf[1] == 'r') {
-					if (br >= N) {
-						puts("invalid input");
-						continue;
-					}
-					ar += br;
 				}
 			} else {
 				puts("invalid input");
