@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0,
+  maximum-scale=1.0, user-scalable=no"/>
+<meta charset="utf-8" />
+<title>Morse Code Translator</title>
+<style>
+body {
+	background: #222;
+	color: white;
+	font-family: sans-serif;
+	font-size: 14px;
+}
+table {
+	margin: 2em auto;
+	padding: 1em;
+	font-family: monospace;
+	border-top: 1px solid;
+	border-bottom: 1px solid;
+}
+td {
+	padding: 0 10px;
+}
+#translate {
+	display: flex;
+	flex-direction: row;
+}
+#translate div {
+	flex: 1;
+	margin: 1em 0.5em;
+}
+#translate textarea {
+	width: 100%;
+	font-size: 1em;
+}
+#translate div::before {
+	position: relative;
+	top: -1em;
+	left: 0;
+}
+#translate div:first-child::before {
+	content: "English";
+}
+#translate div:last-child::before {
+	content: "Morse";
+}
+textarea.error {
+	border: 1px solid crimson;
+	background: #f78;
+}
+
+/* mobile */
+@media screen and (min-resolution: 150dpi),
+/* iphone */
+@media screen and (-webkit-min-device-pixel-ratio:2) {
+	#translate {
+		flex-direction: column;
+	}
+}
+</style>
+</head>
+<body>
+
+<h1>Morse Code Translator</h1>
+
+<div id="translate">
+	<div>
+		<textarea id="english" rows="8"></textarea>
+	</div>
+	<div>
+		<textarea id="morse" rows="8"></textarea>
+	</div>
+</div>
+
+<h1>Cheat Sheet</h1>
+
+<table>
+<tr>
+	<th>character</th>
+	<th>code</th>
+	<th>character</th>
+	<th>code</th>
+</tr>
+<tr>
+	<td>a</td>
+	<td>.-</td>
+	<td>n</td>
+	<td>-.</td>
+</tr>
+<tr>
+	<td>b</td>
+	<td>-...</td>
+	<td>o</td>
+	<td>---</td>
+</tr>
+<tr>
+	<td>c</td>
+	<td>-.-.</td>
+	<td>p</td>
+	<td>.--.</td>
+</tr>
+<tr>
+	<td>d</td>
+	<td>-..</td>
+	<td>q</td>
+	<td>--.-</td>
+</tr>
+<tr>
+	<td>e</td>
+	<td>.</td>
+	<td>r</td>
+	<td>.-.</td>
+</tr>
+<tr>
+	<td>f</td>
+	<td>..-.</td>
+	<td>s</td>
+	<td>...</td>
+</tr>
+<tr>
+	<td>g</td>
+	<td>--.</td>
+	<td>t</td>
+	<td>-</td>
+</tr>
+<tr>
+	<td>h</td>
+	<td>....</td>
+	<td>u</td>
+	<td>..-</td>
+</tr>
+<tr>
+	<td>i</td>
+	<td>..</td>
+	<td>v</td>
+	<td>...-</td>
+</tr>
+<tr>
+	<td>j</td>
+	<td>.---</td>
+	<td>w</td>
+	<td>.--</td>
+</tr>
+<tr>
+	<td>k</td>
+	<td>-.-</td>
+	<td>x</td>
+	<td>-..-</td>
+</tr>
+<tr>
+	<td>l</td>
+	<td>.-..</td>
+	<td>y</td>
+	<td>-.--</td>
+</tr>
+<tr>
+	<td>m</td>
+	<td>--</td>
+	<td>z</td>
+	<td>--..</td>
+</tr>
+<tr class="hr">
+	<td>1</td>
+	<td>.----</td>
+	<td>6</td>
+	<td>-....</td>
+</tr>
+<tr>
+	<td>2</td>
+	<td>..---</td>
+	<td>7</td>
+	<td>--...</td>
+</tr>
+<tr>
+	<td>3</td>
+	<td>...--</td>
+	<td>8</td>
+	<td>---..</td>
+</tr>
+<tr>
+	<td>4</td>
+	<td>....-</td>
+	<td>9</td>
+	<td>----.</td>
+</tr>
+<tr>
+	<td>5</td>
+	<td>.....</td>
+	<td>0</td>
+	<td>-----</td>
+</tr>
+<tr class="hr">
+	<td>?</td>
+	<td>..--..</td>
+	<td>,</td>
+	<td>--..--</td>
+</tr>
+<tr>
+	<td>.</td>
+	<td>.-.-.-</td>
+	<td>;</td>
+	<td>-.-.-.</td>
+</tr>
+<tr>
+	<td>"</td>
+	<td>.-..-.</td>
+	<td>()</td>
+	<td>-.--.-</td>
+</tr>
+<tr>
+	<td>'</td>
+	<td>.----.</td>
+	<td>-</td>
+	<td>-....-</td>
+</tr>
+<tr>
+	<td>@</td>
+	<td>.--.-.</td>
+	<td>/</td>
+	<td>-..-.</td>
+</tr>
+<tr>
+	<td>+</td>
+	<td>.-.-.</td>
+	<td>!</td>
+	<td>-.-.--</td>
+</tr>
+<tr>
+	<td>_</td>
+	<td>..--.-</td>
+	<td>=</td>
+	<td>-...-</td>
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td>:</td>
+	<td>---...</td>
+</tr>
+</table>
+
+<script>
+var e2m = {
+	a:'.-', n:'-.',
+	b:'-...', o:'---',
+	c:'-.-.', p:'.--.',
+	d:'-..', q:'--.-',
+	e:'.', r:'.-.',
+	f:'..-.', s:'...',
+	g:'--.', t:'-',
+	h:'....', u:'..-',
+	i:'..', v:'...-',
+	j:'.---', w:'.--',
+	k:'-.-', x:'-..-',
+	l:'.-..', y:'-.--',
+	m:'--', z:'--..',
+	'1':'.----', '6':'-....',
+	'2':'..---', '7':'--...',
+	'3':'...--', '8':'---..',
+	'4':'....-', '9':'----.',
+	'5':'.....', '0':'-----',
+	'?':'..--..', ',':'--..--',
+	'.':'.-.-.-', ';':'-.-.-.',
+	'"':'.-..-.',
+	'(':'-.--.-',
+	')':'-.--.-',
+	"'":'.----.', '-':'-....-',
+	'@':'.--.-.', '/':'-..-.',
+	'+':'.-.-.', '!':'-.-.--',
+	'_':'..--.-', '=':'-...-',
+	':':'---...', ' ':'/'
+};
+var m2e = {};
+for (key in e2m) {
+	m2e[e2m[key]] = key;
+}
+
+function english2morse(s) {
+	var arr = [];
+	var success = true;
+	for (c of s) {
+		if (c == '\n' || c == '\t')
+			c = ' ';
+		if ('A' <= c && c <= 'Z')
+			c = c.toLowerCase();
+		if (c in e2m)
+			arr.push(e2m[c]);
+		else
+			success = false;
+	}
+	return [success, arr.join(' ')];
+}
+
+english.onkeyup = function() {
+	var ret = english2morse(english.value);
+	if (ret[0])
+		english.classList.remove('error');
+	else
+		english.classList.add('error');
+	morse.value = ret[1];
+}
+
+function morse2english(s) {
+	var arr = [];
+	var success = true;
+	var sentence = s.split('/');
+	var lparen = true;
+	for (word of sentence) {
+		for (c of word.split(' ')) {
+			if (c.trim() == '')
+				continue;
+			c = c.replace(/_/g, '-');
+			if (c == '-.--.-') {
+				arr.push(lparen ? '(' : ')');
+				lparen = !lparen;
+				continue;
+			}
+			if (c in m2e)
+				arr.push(m2e[c]);
+			else
+				success = false;
+		}
+	}
+	return [success, arr.join('')];
+}
+
+morse.onkeyup = function() {
+	var ret = morse2english(morse.value);
+	if (ret[0])
+		morse.classList.remove('error');
+	else
+		morse.classList.add('error');
+	english.value = ret[1];
+}
+</script>
+</body>
+</html>

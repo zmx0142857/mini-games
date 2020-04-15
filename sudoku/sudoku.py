@@ -66,9 +66,12 @@ def log(sudoku):
         buf.append('\n-----+-----+-----\n' if i == 2 or i == 5 else '\n')
     print(''.join(buf))
 
-def read(filename):
+def readfile(filename):
     with open(filename, 'r') as f:
         return [[int(n) for n in line.split()] for line in f.readlines()]
+
+def read():
+    return [[int(n) for n in input().split()] for line in range(9)]
 
 if __name__ == '__main__':
     sudoku = [
@@ -82,7 +85,7 @@ if __name__ == '__main__':
         [0, 0, 0, 8, 9, 0, 0, 0, 0],
         [0, 0, 3, 0, 1, 7, 0, 0, 4]
     ]
-    sudoku = read('sudoku.txt')
+    sudoku = read()
     check(sudoku)
     log(sudoku)
     solve(sudoku)
