@@ -304,19 +304,15 @@ english.onkeyup = function() {
 function morse2english(s) {
 	var arr = [];
 	var success = true;
-	var sentence = s.split('/');
 	var lparen = true;
-	for (word of sentence) {
-		for (c of word.split(' ')) {
-			if (c.trim() == '')
-				continue;
-			c = c.replace(/_/g, '-');
+	s = s.replace(/_/g, '-')
+		 .replace(/\s+/g, ' ');
+	for (c of s.split(' ')) {
+		if (c.trim() != '') {
 			if (c == '-.--.-') {
 				arr.push(lparen ? '(' : ')');
 				lparen = !lparen;
-				continue;
-			}
-			if (c in m2e)
+			} else if (c in m2e)
 				arr.push(m2e[c]);
 			else
 				success = false;
