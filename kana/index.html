@@ -6,15 +6,32 @@
 <title>学五十音</title>
 <meta charset="utf-8" />
 <style>
-button {
-	margin-right: 3px;
+body {
+	background: aliceblue;
+}
+#settings {
+	text-align: center;
+}
+#wrap {
+	width: 60%;
+	min-width: 300px;
+	max-width: 800px;
+	margin: 0 auto;
+	padding: 10px;
+	text-align: center;
+}
+#choice > button {
+	width: 200px;
+	height: 40px;
+	display: block;
+	margin: 8px auto;
 }
 </style>
 </head>
 
 <body>
 
-<form>
+<form id="settings">
 	<input type="checkbox" id="checkbox-hiragana" checked="true"/>
 	<label for="checkbox-hiragana">平假名</label>
 	<input type="checkbox" id="checkbox-katakana"/>
@@ -29,10 +46,12 @@ button {
 	<label for="checkbox-youon">填空</label> <!-- 待实现 -->
 </form>
 
+<div id="wrap">
 <p id="question"></p>
 <p id="choice" onclick="choose()"></p>
 <p id="message"></p>
 <button id="next" onclick="newQuestion()">下一个</button>
+</div>
 
 <script>
 var dict = [
@@ -95,7 +114,6 @@ var questionStr, answer, answerStr, choice;
 var info = {
 	correctCnt: parseInt(localStorage['correctCnt']) || 0,
 	mistakeCnt: parseInt(localStorage['mistakeCnt']) || 0,
-	mistakes: eval(localStorage['mistakes']) || {},
 };
 
 // 在控制台调用 statistics() 查看当前计数
@@ -113,21 +131,15 @@ function choose() {
 		//elemMessage.innerHTML = '正确!';
 		++info.correctCnt;
 		localStorage['correctCnt'] = info.correctCnt;
-    newQuestion();
+		newQuestion();
 	} else {
 		elemMessage.style.color = '#800';
 		elemMessage.innerHTML = '答案: ' + answerStr;
 		++info.mistakeCnt;
 		localStorage['mistakeCnt'] = info.mistakeCnt;
-		if (typeof(info.mistakes[questionStr]) == 'undefined')
-			info.mistakes[questionStr] = 1;
-		else
-			++info.mistakes[questionStr];
-		localStorage['mistakes'] = info.mistakes.toSource(); // 低效
-
-    buttonNext.style.display = 'inline';
-    document.onkeydown = onAnswer;
-    elemChoice.onclick = function() {};
+		buttonNext.style.display = 'inline';
+		document.onkeydown = onAnswer;
+		elemChoice.onclick = function() {};
 	}
 }
 

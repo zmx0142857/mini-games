@@ -10,8 +10,8 @@ mistake = 0
 mistakes = []
 begin = time()
 beginq = begin
-a = 12
-b = 99
+a = argv[1] if len(argv) > 1 else 12
+b = argv[2] if len(argv) > 2 else 99
 speed = {}
 
 def stat():
@@ -23,13 +23,14 @@ def stat():
         if mistakes:
             print("mistakes: %s" % ', '.join('%d*%d' % elem for elem in set(mistakes)))
 
-if len(argv) > 2:
-    a, b = int(argv[1]), int(argv[2])
-for cnt in range(30):
+def get_operands(a, b):
     if len(mistakes) > 0 and randint(0,6) == 0:
-        i, j = choice(mistakes)
+        return choice(mistakes)
     else:
-        i, j = randint(a,b), randint(2,9)
+        return randint(a,b), randint(2,9)
+
+for cnt in range(30):
+    i, j = get_operands(a, b)
     ans = i * j
     while True:
         try:
