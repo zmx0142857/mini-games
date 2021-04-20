@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width"/>
+<meta charset="utf-8" />
+<title>走别人的路，让别人无路可走</title>
+<style>
+body {
+  padding: 0;
+  margin: 0;
+  color: #c99;
+  background: #955;
+  font-family: sans-serif;
+}
+.container {
+  display: table;
+  margin: 0 auto;
+}
+table {
+  table-layout: fixed;
+  user-select: none;
+}
+td {
+  border-radius: 10px;
+  height: 55px;
+  width: 55px;
+  text-align: center;
+  vertical-align: middle;
+  background: #c99;
+  color: #955;
+  font-size: 24px;
+  font-weight: bold;
+}
+table > tr:nth-child(2n+1) > td:nth-child(2n+1),
+table > tr:nth-child(2n) > td:nth-child(2n) {
+  background: #b88;
+}
+td:hover,
+table > tr:nth-child(2n+1) > td:nth-child(2n+1):hover,
+table > tr:nth-child(2n) > td:nth-child(2n):hover {
+  background: #a77;
+}
+td.disabled,
+table > tr:nth-child(2n+1) > td:nth-child(2n+1).disabled,
+table > tr:nth-child(2n) > td:nth-child(2n).disabled {
+  background: #955;
+}
+@media screen and (min-resolution: 150dpi) {
+  td {
+    width: 36px;
+    height: 36px;
+  }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <p>两位玩家轮流移动，每次允许横、竖或斜移任意格。<br/>
+  不能移动到被对方吃的位置上。无路可走的玩家输。</p>
+  <h2 id="current"></h2>
+  <table id="table"></table>
+</div>
+<script>
+var table = $('#table'),
+    rows = 8, cols = 9,
+    A = new Player('A'),
+    B = new Player('B'),
+    players = [A, B],
+    round = 0
+
+function id(i, j) {
+  return i + '.' + j
+}
+
+function $(arg1, arg2) {
+  if (typeof arg1 === 'number') {
+    return document.getElementById(id(arg1, arg2))
+  } else if (typeof arg1 === 'string') {
+    if (arg1[0] === '#') {
+      return document.getElementById(arg1.slice(1))
+    } else if (arg1[0] === '<') {
+      return document.createElement(arg1.slice(1, -1))
+    }
+  }
+}
+
+function sgn(x) {
+  if (x < 0) return -1
+  if (x > 0) return 1
+  return 0
+}
+
+function isAble(i, j) {
+  return !$(i, j).classList.contains('disabled')
+}
+
+function Player(text, row, col) {
+  this.text = text
+  this.row = row
+  this.col = col
+}
+
+Player.prototype.ableTo = function (row, col) {
+  // 不能不移动
+  if (row === this.row && col === this.col) return false
+  // 只能移动到同一横、竖、斜线上
+  if (this.row !== row && this.col !== col &&
+      this.row + this.col !== row + col &&
+      this.row - this.col !== row - col) return false
+  var di = sgn(row - this.row), dj = sgn(col - this.col)
+      i = this.row + di, j = this.col + dj
+  while (i !== row || j !== col) {
+    if (!isAble(i, j)) return false
+    i += di, j += dj
+  }
+  if (!isAble(i, j)) return false
+  return true
+}
+
+Player.prototype.moveTo = function(row, col) {
+  if (this.row !== undefined && this.col !== undefined) {
+    // 清空当前文字
+    var td = $(this.row, this.col)
+    td.innerText = ''
+    td.classList.add('disabled')
+    // 清空路径
+    var di = sgn(row - this.row), dj = sgn(col - this.col),
+        i = this.row , j = this.col
+    while (i !== row || j !== col) {
+      $(i, j).classList.add('disabled')
+      i += di, j += dj
+    }
+  }
+  // 设置终点文字
+  this.row = row
+  this.col = col
+  $(row, col).innerText = this.text
+}
+
+Player.prototype.check = function() {
+  var directions = [-1, 0, 1]
+  for (var di of directions) {
+    for (var dj of directions) {
+      if (di === 0 && dj === 0) continue
+      var i = this.row + di, j = this.col + dj
+      while (i >= 0 && i < rows && j >= 0 && j < cols && isAble(i, j)) {
+        // console.log(this.row, this.col, '->', i, j)
+        if (!getOpponent().ableTo(i, j)) return true
+        i += di, j += dj
+      }
+    }
+  }
+  return false
+}
+
+function getCurrent() {
+  return players[round % 2]
+}
+
+function getOpponent() {
+  return players[1 - round % 2]
+}
+
+function showCurrent() {
+  $('#current').innerText = '该你了，小' + getCurrent().text
+}
+
+function onclick(i, j) {
+  return function () {
+    var cur = getCurrent()
+    if (cur.ableTo(i, j) && !getOpponent().ableTo(i, j)) {
+      cur.moveTo(i, j)
+      ++round
+      cur = getCurrent()
+      if (!cur.check()) {
+        alert(cur.text + '输了!')
+        location.reload()
+      } else {
+        showCurrent()
+      }
+    }
+  }
+}
+
+function init() {
+  for (var i = 0; i < rows; ++i) {
+    var tr = $('<tr>')
+    for (var j = 0; j < cols; ++j) {
+      var td = $('<td>')
+      td.id = id(i, j)
+      tr.appendChild(td)
+      td.addEventListener('click', onclick(i, j))
+    }
+    table.appendChild(tr)
+  }
+  A.moveTo(0, 0)
+  B.moveTo(7, 8)
+  showCurrent()
+}
+init()
+</script>
+</body>
+</html>

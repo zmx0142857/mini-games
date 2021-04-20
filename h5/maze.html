@@ -1,0 +1,348 @@
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>迷宫小游戏</title>
+<style>
+* {
+  font-family: 'PT Sans', Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  margin: 0;
+  padding: 0;
+}
+#time {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+}
+#canvas, #toggle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%)
+}
+#toggle.playing {
+  opacity: 0;
+}
+#toggle.playing:hover {
+  opacity: 1;
+}
+button {
+  vertical-align: bottom;
+  cursor: pointer;
+  width: 150px;
+  height: 44px;
+  padding: 0;
+  background: #ef4300;
+  -moz-border-radius: 6px;
+  -webkit-border-radius: 6px;
+  border-radius: 6px;
+  border: 1px solid #ff730e;
+  -moz-box-shadow:
+  0 15px 30px 0 rgba(255,255,255,.25) inset,
+  0 2px 7px 0 rgba(0,0,0,.2);
+  -webkit-box-shadow:
+  0 15px 30px 0 rgba(255,255,255,.25) inset,
+  0 2px 7px 0 rgba(0,0,0,.2);
+  box-shadow:
+  0 15px 30px 0 rgba(255,255,255,.25) inset,
+  0 2px 7px 0 rgba(0,0,0,.2);
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,.1);
+  -o-transition: all .2s;
+  -moz-transition: all .2s;
+  -webkit-transition: all .2s;
+  -ms-transition: all .2s;
+}
+button:hover {
+  -moz-box-shadow:
+  0 15px 30px 0 rgba(255,255,255,.15) inset,
+  0 2px 7px 0 rgba(0,0,0,.2);
+  -webkit-box-shadow:
+  0 15px 30px 0 rgba(255,255,255,.15) inset,
+  0 2px 7px 0 rgba(0,0,0,.2);
+  box-shadow:
+  0 15px 30px 0 rgba(255,255,255,.15) inset,
+  0 2px 7px 0 rgba(0,0,0,.2);
+}
+button:active {
+  -moz-box-shadow:
+  0 15px 30px 0 rgba(255,255,255,.15) inset,
+  0 2px 7px 0 rgba(0,0,0,.2);
+  -webkit-box-shadow:
+  0 15px 30px 0 rgba(255,255,255,.15) inset,
+  0 2px 7px 0 rgba(0,0,0,.2);
+  box-shadow:
+  0 5px 8px 0 rgba(0,0,0,.1) inset,
+  0 1px 4px 0 rgba(0,0,0,.1);
+  border: 0px solid #ef4300;
+}
+</style>
+</head>
+<body>
+
+<div id="time"></div>
+<canvas id="canvas" width="600" height="600"></canvas>
+<button id="toggle" onclick="toggle()">开始游戏</button>
+
+<script>
+(function(window, document){
+
+var canvas = document.getElementById('canvas')
+var context = canvas.getContext('2d')
+var size = 14 // 地图大小
+var tile = 30
+var offset = 2.5
+var a, b // 终点
+var x, y // 起点
+
+var mytime = document.getElementById('time')
+var h = m = s = ms = 0 // 时，分，秒，毫秒
+var interval
+var tick = 50
+var playing = false
+
+var tree = [] // 并查集, 用来记录迷宫的连通分量
+var isConnected = [] // 记录相邻格子的连通性
+
+var btnToggle = document.getElementById('toggle')
+
+init()
+
+function transform(a) {
+  return (a + offset) * tile + 20
+}
+
+function init() {
+
+  // 变量初始化
+  a = size-1, b = a, x = 0, y = x
+
+  // 数组初始化
+  for (var i = 0; i < size * size; i ++) {
+    tree[i] = -1 // 连通分量的大小取负值
+  }
+
+  for (var i = 0; i < size * size; i ++) {
+    isConnected[i] = []
+    // 0 1 2 3 = 上 下 左 右
+    for (var j = 0; j < 4; j ++) {
+      isConnected[i][j] = false
+    }
+  }
+
+  function th(i) {
+    return (i + offset) * tile + 15
+  }
+
+  // 绘制一个 size*size 网格
+  context.strokeStyle = 'gray'
+  for (var i = 0; i <= size; i ++) {
+    context.moveTo(th(i), th(0)) //垂直方向
+    context.lineTo(th(i), th(size))
+    context.stroke()
+    context.moveTo(th(0), th(i)) //水平方向
+    context.lineTo(th(size), th(i))
+    context.stroke()
+  }
+
+  // 随机生成迷宫
+  // 当起点到终点不连通时, 随机选取相邻的两方格, 进行破壁
+  while (findRoot(0) != findRoot(size * size - 1)) {
+    var u = parseInt(Math.random() * size * size) // [0, size*size-1]
+    var neighbour = getNeighbour(u)
+    var dir = neighbour[0], v = neighbour[1]
+
+    if (findRoot(u) != findRoot(v)) {
+      isConnected[u][dir] = true
+      isConnected[v][dir ^ 1] = true // 反方向
+      union(u, v)
+      breakWall(u, v)
+    }
+  }
+
+  // 绘制终点、起点
+  context.fillStyle = '#ef4300'
+  context.fillRect(transform(a), transform(b), 20, 20)
+  context.fillStyle = '#49f'
+  context.fillRect(transform(x), transform(y), 20, 20)
+
+  // 监听键盘事件
+  canvas.addEventListener('keydown', doKeyDown, true)
+  canvas.focus()
+  window.addEventListener('keydown', doKeyDown, true)
+}
+
+// 获得随机邻居
+function getNeighbour(a) {
+  var x = parseInt(a / size), y = a % size
+  var neighbours = []
+  // 0 1 2 3 = 上下左右
+  if (y - 1 >= 0) {
+    neighbours.push([0, a - 1])
+  }
+  if (y + 1 < size) {
+    neighbours.push([1, a + 1])
+  }
+  if (x - 1 >= 0) {
+    neighbours.push([2, a - size])
+  }
+  if (x + 1 < size) {
+    neighbours.push([3, a + size])
+  }
+  var choice = parseInt(Math.random() * neighbours.length)
+  return neighbours[choice]
+}
+
+// 找到根节点
+function findRoot(a) {
+  var parent = tree[a]
+  return parent > 0 ? (tree[a] = findRoot(parent)) : a
+}
+
+// 合并
+function union(a, b) {
+  a = findRoot(a), b = findRoot(b)
+  if (a === b) return
+  var anode = tree[a], bnode = tree[b]
+  if (anode < bnode) { // 这两个数是负数
+    tree[a] += bnode
+    tree[b] = a // b 成为 a 的子树
+  } else {
+    tree[b] += anode
+    tree[a] = b
+  }
+}
+
+function breakWall(a, b) {
+  var x1 = parseInt(a / size), y1 = a % size
+  var x2 = parseInt(b / size), y2 = b % size
+  var x3 = (x1 + x2) / 2, y3 = (y1 + y2) / 2
+
+  if (y1 === y2) {
+    context.clearRect(
+      (x3 + offset + 1) * tile - 1,
+      (y3 + offset + 0.5) * tile + 1,
+      2,
+      tile - 2
+    )
+  } else {
+    context.clearRect(
+      (x3 + offset + 0.5) * tile + 1,
+      (y3 + offset + 1) * tile - 1,
+      tile - 2,
+      2
+    )
+  }
+}
+
+function doKeyDown(e) {
+  var keyID = e.keyCode ? e.keyCode : e.which
+  var isValid = true
+  var index = x * size + y
+  // (x - 20) / tile * size + (y - 20) / tile
+  if (!playing) return
+  if (keyID === 38 || keyID === 87) { // ↑ | W
+    if (y > 0 && isConnected[index][0]) {
+      clearCanvas()
+      --y
+    }
+  } else if (keyID === 40 || keyID === 83) { // ↓ | S
+    if (y < size && isConnected[index][1]) {
+      clearCanvas()
+      ++y
+    }
+  } else if (keyID === 37 || keyID === 65) { // ← | A
+    if (x > 0 && isConnected[index][2]) {
+      clearCanvas()
+      --x
+    }
+  } else if (keyID === 39 || keyID === 68) { // → | D
+    if (x < size && isConnected[index][3]) {
+      clearCanvas()
+      ++x
+    }
+  } else {
+    isValid = false
+  }
+
+  if (isValid) {
+    context.fillRect(transform(x), transform(y), 20, 20)
+    e.preventDefault()
+    gameover()
+  }
+}
+
+function clearCanvas() {
+  // 清除上一步的方块
+  context.clearRect(transform(x) - 2, transform(y) - 2, 25, 25)
+}
+
+function gameover() {
+  if (x >= a && y >= b) {
+    size += 2
+    --offset
+    if (size >= 20) {
+      stop()
+      alert('大胜利！用时: ' + mytime.textContent)
+      refresh()
+    } else {
+      context.clearRect(0, 0, 600, 600)
+      init()
+    }
+  }
+}
+
+function timer() {
+  ms += tick
+  if (ms >= 1000) {
+    ms = 0
+    ++s
+  }
+
+  if (s >= 60) {
+    s = 0
+    ++m
+  }
+
+  if (m >= 60) {
+    m = 0
+    ++h
+  }
+
+  function pad (n, width) {
+    return String(n).padStart(width, '0')
+  }
+
+  mytime.textContent =
+    pad(h, 2) + ':' +
+    pad(m, 2) + ':' +
+    pad(s, 2) + '.' +
+    pad(ms, 3)
+}
+
+function start() {
+  playing = true
+  interval = setInterval(timer, tick)
+  btnToggle.textContent = '暂停'
+}
+
+function stop() {
+  playing = false
+  clearInterval(interval)
+  btnToggle.textContent = '继续'
+}
+
+window.toggle = function () {
+  playing ? stop() : start()
+  btnToggle.classList.toggle('playing')
+}
+
+window.refresh = function () {
+  document.location.reload()
+}
+
+})(window, document)
+</script>
+</body>
+</html>
