@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width"/>
+<meta charset="utf-8" />
+<title>数字华容道</title>
+<style>
+body {
+  padding: 0;
+  margin: 0;
+  color: #c99;
+  background: #955;
+  font-family: sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.container {
+  display: block;
+}
+#count {
+  text-align: center;
+}
+table {
+  table-layout: fixed;
+  user-select: none;
+}
+td {
+  border-radius: 10px;
+  height: 55px;
+  width: 55px;
+  text-align: center;
+  vertical-align: middle;
+  background: #b88;
+  color: #955;
+  font-size: 24px;
+  font-weight: bold;
+}
+td:hover {
+  background: #a77;
+}
+td.disabled {
+  /*transition: .5s ease;*/
+  background: #955;
+}
+@media screen and (min-resolution: 150dpi) {
+  td {
+    width: 36px;
+    height: 36px;
+  }
+}
+.solve {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+}
+</style>
+</head>
+<body>
+<button class="solve" onclick="solve()">Solve (bug)</button>
+<div class="container">
+  <table id="table"></table>
+  <h3 id="count">0</h3>
+</div>
+<script>
+const table = $('#table'), countLabel = $('#count'), rows = 6, cols = 6
+let blankX = rows-1, blankY = cols-1, count = 0, answer, nums
+
+function $(arg1, arg2) {
+  if (typeof arg1 === 'number') {
+    return document.getElementById(id(arg1, arg2))
+  } else if (typeof arg1 === 'string') {
+    if (arg1[0] === '#') {
+      return document.getElementById(arg1.slice(1))
+    } else if (arg1[0] === '<') {
+      return document.createElement(arg1.slice(1, -1))
+    }
+  }
+}
+
+function id(i, j) {
+  return i + '.' + j
+}
+
+function check () {
+  //if (table.innerText.trim().replace(/\s/g, ',') === answer) {
+  const str = nums.toString()
+  if (str === answer) {
+    alert('You win!')
+    location.reload()
+  }
+}
+
+function swap(arr, i, j) {
+  const tmp = arr[i]
+  arr[i] = arr[j]
+  arr[j] = tmp
+}
+
+// move blank to i, j
+function moveBlock (i, j) {
+  const from = $(i, j)
+  const to = $(blankX, blankY)
+  // display
+  to.textContent = from.textContent
+  to.classList.remove('disabled')
+  from.textContent = ''
+  from.classList.add('disabled')
+  // memory
+  swap(nums, blankX*cols + blankY, i*cols + j)
+  check()
+  // update
+  blankX = i
+  blankY = j
+  countLabel.textContent = ++count
+}
+
+function onclick(i, j) {
+  return function () {
+    if (Math.abs(i - blankX) + Math.abs(j - blankY) === 1) {
+      moveBlock(i, j)
+    }
+  }
+}
+
+document.onkeyup = function (e) {
+  switch (e.keyCode) {
+    case 37: // 上
+      if (blankY < rows-1)
+        moveBlock(blankX, blankY+1)
+      break
+    case 38: // 左
+      if (blankX < cols-1)
+        moveBlock(blankX+1, blankY)
+      break
+    case 39: // 下
+      if (blankY > 0)
+        moveBlock(blankX, blankY-1)
+      break
+    case 40: // 右
+      if (blankX > 0)
+        moveBlock(blankX-1, blankY)
+      break
+  }
+}
+
+function randNums (length) {
+  const arr = Array.from({ length }, (_, i) => i+1)
+  answer = arr.toString() + ',' + (length+1)
+  for (let i = 0; i < length; ++i) {
+    const j = Math.floor(Math.random() * (length - i))
+    swap(arr, i, i+j)
+  }
+  arr.push(length + 1) // blank
+  return arr
+}
+
+function init () {
+  nums = randNums(rows * cols - 1)
+  let k = 0
+  for (let i = 0; i < rows; ++i) {
+    const tr = $('<tr>')
+    for (let j = 0; j < cols; ++j) {
+      const td = $('<td>')
+      td.id = id(i, j)
+      if (k < rows * cols - 1) {
+        td.textContent = nums[k++]
+      } else {
+        td.classList.add('disabled')
+      }
+      td.addEventListener('click', onclick(i, j))
+      tr.appendChild(td)
+    }
+    table.appendChild(tr)
+  }
+}
+
+init()
+
+// -- 自动解题 --
+
+// bfs
+// 只能移动大于 lo 的数
+function getPath (from, to, lo) {
+  const visited = Array.from({ length: rows }, () => [])
+  const queue = [ to ]
+  while (queue.length) {
+    let [x, y] = queue.shift()
+    if (x === from[0] && y === from[1]) {
+      return visited
+    }
+    if (y > 0 && !visited[x][y-1] && nums[x*cols+y-1] >= lo) {
+      queue.push([x, y-1])
+      visited[x][y-1] = [0, -1]
+    }
+    if (y < rows-1 && !visited[x][y+1] && nums[x*cols+y+1] >= lo) {
+      queue.push([x, y+1])
+      visited[x][y+1] = [0, 1]
+    }
+    if (x > 0 && !visited[x-1][y] && nums[(x-1)*cols+y] >= lo) {
+      queue.push([x-1, y])
+      visited[x-1][y] = [-1, 0]
+    }
+    if (x < cols-1 && !visited[x+1][y] && nums[(x+1)*cols+y] >= lo) {
+      queue.push([x+1, y])
+      visited[x+1][y] = [1, 0]
+    }
+  }
+}
+
+function * moveBlank (x, y, lo) {
+  const blankPath = getPath([blankX, blankY], [x, y], lo)
+  while (x !== blankX || y !== blankY) {
+    const [dx, dy] = blankPath[blankX][blankY]
+    yield [blankX - dx, blankY - dy]
+  }
+}
+
+function * moveNumber (i, j, lo, moving) {
+  let index = nums.indexOf(moving)
+  let x = Math.floor(index / cols), y = index % cols
+  const path = getPath([x, y], [i, j], lo)
+  //if (moving > 24) console.log(moving, index, x, y, i, j)
+  while (x !== i || y !== j) {
+    const [dx, dy] = path[x][y]
+    const tmp = x*cols+y
+    x -= dx, y -= dy
+    //console.log('moving blank to', x, y)
+    nums[tmp] = -1
+    try {
+      yield * moveBlank(x, y, lo)
+    } catch (e) {
+      nums[tmp] = moving
+      throw e
+    }
+    nums[tmp] = moving
+    yield [x + dx, y + dy]
+  }
+}
+
+function * genSolve () {
+  let lo = 1
+  let i
+  for (i = 0; i < rows-2; ++i) {
+    let j
+    for (j = 0; j < cols-2; ++j) {
+      yield * moveNumber(i, j, lo, lo)
+      ++lo
+    }
+    const last = lo+1
+    //console.log('move', last)
+    yield * moveNumber(i, j, lo, last)
+
+    //console.log('set', last, 'to -1, move', lo)
+    nums[nums.indexOf(last)] = -1
+    try {
+      yield * moveNumber(i+1, j, lo, lo)
+    } catch (e) {
+      nums[nums.indexOf(-1)] = last
+      throw e
+    }
+    nums[nums.indexOf(-1)] = last
+
+    //console.log('move', last)
+    yield * moveNumber(i, j+1, last, last)
+
+    //console.log('move', lo)
+    yield * moveNumber(i, j, lo, lo)
+
+    lo += 2
+  }
+  for (j = 0; j < cols-1; ++j) {
+    const hi = lo + cols
+    //console.log('move', hi)
+    yield * moveNumber(i, j, lo, hi)
+
+    //console.log('move', lo)
+    nums[nums.indexOf(hi)] = -1
+    try {
+    yield * moveNumber(i, j+1, lo, lo)
+    } catch (e) {
+      nums[nums.indexOf(-1)] = hi
+      throw e
+    }
+    nums[nums.indexOf(-1)] = hi
+
+    //console.log('move', hi)
+    yield * moveNumber(i+1, j, lo+1, hi)
+
+    //console.log('move', lo)
+    yield * moveNumber(i, j, lo, lo)
+
+    ++lo
+  }
+  yield * moveNumber(i, j, lo, lo)
+}
+
+function solve () {
+  const gen = genSolve()
+  const interval = setInterval(moveNext, 10)
+  function moveNext () {
+    const val = gen.next().value
+    if (val) {
+      moveBlock(...val)
+    } else {
+      clearInterval(interval)
+    }
+  }
+}
+</script>
+</body>
+</html>
