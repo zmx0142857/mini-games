@@ -4,6 +4,7 @@
 <meta name="viewport" content="width=device-width"/>
 <meta charset="utf-8" />
 <title>数字华容道</title>
+<!-- https://en.wikipedia.org/wiki/15_puzzle -->
 <style>
 body {
   padding: 0;
@@ -145,12 +146,17 @@ document.onkeyup = function (e) {
   }
 }
 
+// 生成随机偶置换 (奇置换是不可解的)
 function randNums (length) {
   const arr = Array.from({ length }, (_, i) => i+1)
   answer = arr.toString() + ',' + (length+1)
   for (let i = 0; i < length; ++i) {
     const j = Math.floor(Math.random() * (length - i))
-    swap(arr, i, i+j)
+    const k = Math.floor(Math.random() * (length - i))
+    if (0 !== j && 0 !== k && j !== k) {
+      swap(arr, i, i+j)
+      swap(arr, i, i+k)
+    }
   }
   arr.push(length + 1) // blank
   return arr
