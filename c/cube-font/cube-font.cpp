@@ -1,6 +1,6 @@
 /*
  * Name:       CubeFont-2.0
- * Author:     Clarence Zhuo
+ * Author:     zmx0142857
  * Description:Input 2D graphics, output 3D.
  * Examples:
  *                                              _____

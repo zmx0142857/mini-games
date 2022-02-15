@@ -22,7 +22,7 @@
 
 ################################################################################
 #   Name:       Funfont_1.0
-#   Author:     Zhuo Mingxin
+#   Author:     zmx0142857
 #   Version:    1.0
 #   Copyright:
 #   Link:

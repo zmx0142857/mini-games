@@ -71,7 +71,7 @@ char check(int al, int ar, int bl, int br)
 }
 
 // 四面有一 B 就获胜, 四面皆 A 则失败
-#define try
+// #define try
 #define try(BL,BR)\
 	win = check(bl, br, BL, BR);\
 	if (win == B_WINS) {\

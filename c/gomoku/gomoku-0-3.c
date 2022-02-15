@@ -1,6 +1,6 @@
 /*
     Name:        Gomoku_0.3
-    Author:      卓铭鑫
+    Author:      zmx0142857
     Version:     0.3
     Description: 连珠五子棋
 */

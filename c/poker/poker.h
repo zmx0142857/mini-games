@@ -1,6 +1,6 @@
 /*
     Name:        poker - 0.2
-    Author:      Clarence Zhuo
+    Author:      zmx0142857
     Description: simple card game program
 
     Use id:

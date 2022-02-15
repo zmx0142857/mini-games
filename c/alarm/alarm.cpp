@@ -6,83 +6,83 @@
 
 #ifdef __MINGW32__
 #include <windows.h>
-#include <mmsystem.h>	// need to link libwinmm.a
+#include <mmsystem.h>   // need to link libwinmm.a
 #endif
 
 using namespace std;
 
 class Alarm {
 
-	static const char bell = 7;
-	unsigned hh, mm, ss;
-	unsigned ah = 25, am = 0, as = 0;	// Ä¬ÈÏ²»Ïì
-	int alertCount = 0;					// »¹ĞèÒªÏì¼¸ÏÂ
+    static const char bell = 7;
+    unsigned hh, mm, ss;
+    unsigned ah = 25, am = 0, as = 0;   // é»˜è®¤ä¸å“
+    int alertCount = 0;                 // è¿˜éœ€è¦å“å‡ ä¸‹
 
 public:
-	int alertLength = 10000;			// ÄÖÁå³¤¶È
+    int alertLength = 10000;            // é—¹é“ƒé•¿åº¦
 
-	void setAlarm(unsigned h, unsigned m, unsigned s)
-	{
-		ah = h;
-		am = m;
-		as = s;
-	}
+    void setAlarm(unsigned h, unsigned m, unsigned s)
+    {
+        ah = h;
+        am = m;
+        as = s;
+    }
 
-	void print() const	// const ·½·¨²»ĞŞ¸Ä³ÉÔ±±äÁ¿
-	{
-		cout << '\r'					// Çå³ıµ±Ç°ĞĞ
-			 << setw(2) << hh << ':'
-			 << setw(2) << mm << ':'
-			 << setw(2) << ss << flush;
-	}
+    void print() const  // const æ–¹æ³•ä¸ä¿®æ”¹æˆå‘˜å˜é‡
+    {
+        cout << '\r'                    // æ¸…é™¤å½“å‰è¡Œ
+             << setw(2) << hh << ':'
+             << setw(2) << mm << ':'
+             << setw(2) << ss << flush;
+    }
 
-	void update(time_t cur_sec)
-	{
-		hh = (cur_sec / 3600 + 8) % 24;
-		mm = cur_sec / 60 % 60;
-		ss = cur_sec % 60;
-	}
+    void update(time_t cur_sec)
+    {
+        hh = (cur_sec / 3600 + 8) % 24;
+        mm = cur_sec / 60 % 60;
+        ss = cur_sec % 60;
+    }
 
-	void run()
-	{
-		time_t last_sec = time(NULL);	// »ñÈ¡ÏµÍ³Ê±¼ä
-		cout << setfill('0');			// ÔÚ cout µÄÊı×ÖÇ°²¹ 0
-		while (true) {
-			usleep(2000);				// ĞİÏ¢ 2000 ¦Ìs
+    void run()
+    {
+        time_t last_sec = time(NULL);   // è·å–ç³»ç»Ÿæ—¶é—´
+        cout << setfill('0');           // åœ¨ cout çš„æ•°å­—å‰è¡¥ 0
+        while (true) {
+            usleep(2000);               // ä¼‘æ¯ 2000 Î¼s
 #ifdef __MINGW32__
             if (alertCount > 0) {
                 PlaySound("Alarm07.wav", NULL, SND_FILENAME | SND_ASYNC);
                 alertCount = 0;
             }
 #else
-			if (alertCount > 0) {
-				cout << bell << flush;
-				--alertCount;
-			}
+            if (alertCount > 0) {
+                cout << bell << flush;
+                --alertCount;
+            }
 #endif
-			time_t cur_sec = time(NULL);
-			if (cur_sec != last_sec) {
-				update(cur_sec);
-				print();
-				last_sec = cur_sec;
-				if (ah == hh && am == mm && as == ss) {
-					alertCount = alertLength;
-				}
-			}
-		}
-	}
+            time_t cur_sec = time(NULL);
+            if (cur_sec != last_sec) {
+                update(cur_sec);
+                print();
+                last_sec = cur_sec;
+                if (ah == hh && am == mm && as == ss) {
+                    alertCount = alertLength;
+                }
+            }
+        }
+    }
 };
 
 int main(int argc, char **argv)
 {
-	Alarm a;
-	if (argc > 3) {
-		a.setAlarm(
-			atoi(argv[1]),
-			atoi(argv[2]),
-			atoi(argv[3])
-		);
-	}
-	a.run();
-	return 0;
+    Alarm a;
+    if (argc > 3) {
+        a.setAlarm(
+            atoi(argv[1]),
+            atoi(argv[2]),
+            atoi(argv[3])
+        );
+    }
+    a.run();
+    return 0;
 }

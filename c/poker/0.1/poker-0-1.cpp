@@ -1,6 +1,6 @@
 /*
     Name:        Poker_0.1
-    Author:      Zhuo Mingxin
+    Author:      zmx0142857
     Copyright:
     Link:
     Description: simple card game program

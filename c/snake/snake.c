@@ -1,4 +1,4 @@
-#include "../game.h"
+#include "game.h"
 #include <time.h>		// rand(), srand(), time()
 #include <ctype.h>		// tolower()
 

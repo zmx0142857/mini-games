@@ -3,7 +3,7 @@
 
 """Class simulating the Chinese toy Jiulianhuan."""
 
-__author__ = 'Clarence Zhuo'
+__author__ = 'zmx0142857'
 
 class Jiulianhuan(object):
     def __init__(self, loaded=True):

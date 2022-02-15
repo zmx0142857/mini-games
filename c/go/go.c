@@ -1,5 +1,5 @@
 #include "game.h"
-#include "string.h"
+#include <string.h>
 
 #define STAR "◎" // @ ╋ ⍿ ⌖ ·
 #define WIDTH 19

@@ -3,7 +3,7 @@
 
 """A 4-digit guess game from my old television."""
 
-__author__ = 'Clarence Zhuo'
+__author__ = 'zmx0142857'
 
 import random
 

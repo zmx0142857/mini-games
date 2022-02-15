@@ -1,6 +1,6 @@
 """A maze game generator"""
 
-__author__ = 'Clarence Zhuo'
+__author__ = 'zmx0142857'
 
 import random
 
