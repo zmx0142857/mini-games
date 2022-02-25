@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<title>数织</title>
+<style>
+:root {
+  --border-color: #d0d0d8;
+}
+* {
+  box-sizing: border-box;
+}
+html, body {
+  width: max-content;
+}
+body {
+  color: #234;
+  background: #f0f0fb;
+  font-family: sans-serif;
+  margin: 0;
+}
+.container {
+  padding: 8px;
+  min-width: 100vw;
+}
+.filled {
+  background: #234;
+}
+.loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 48px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.loading .text::after {
+  content: "I'm trying my best...";
+  animation: 2s loading steps(3,jump-none) infinite;
+}
+@keyframes loading {
+  0% { content: "I'm trying my best" }
+  25% { content: "I'm trying my best." }
+  50% { content: "I'm trying my best.." }
+  100% { content: "I'm trying my best..." }
+}
+.hidden {
+  display: none;
+}
+.control {
+  text-align: center;
+}
+.control button {
+  border: 1px solid var(--border-color);
+  border-left: none;
+  color: #234;
+  padding: 0.3em 1em;
+  margin: 5px 0;
+  height: 30px;
+  background: rgba(255,255,255,0.4);
+  border-radius: 0;
+}
+.control button[disabled] {
+  color: #888;
+}
+.control button:first-child {
+  border-left: 1px solid var(--border-color);
+  border-radius: 7px 0 0 7px;
+}
+.control button:last-child {
+  border-radius: 0 7px 7px 0;
+}
+.control button:hover {
+  background: rgba(255, 255, 255, 0.1)
+}
+.table {
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.4);
+  margin: 0 auto;
+  font-size: 14px;
+  overflow: hidden; /* 防止单元格着色超出圆角 */
+}
+.table td,
+.table th {
+  /* border: 1px solid #eee; */
+  padding: 0;
+}
+.table th:nth-child(5n+1),
+.table td:nth-child(5n+1) {
+  border-right: 1px solid var(--border-color);
+}
+.table tr:nth-child(5n) td {
+  border-bottom: 1px solid var(--border-color);
+}
+.table td:last-child,
+.table th:last-child {
+  border-right: none;
+}
+.table > tbody > tr:last-child td {
+  border-bottom: none;
+}
+.table > thead > tr > th {
+  border-bottom: 1px solid var(--border-color);
+}
+.table > thead > tr > th:first-child {
+  border-right: 1px solid var(--border-color);
+}
+.table tr > td:first-child {
+  border-right: 1px solid var(--border-color);
+  font-weight: bold;
+  text-align: center;
+  padding: 0 4px;
+  min-width: max-content;
+}
+.table > thead th + th {
+  width: 20px;
+  min-width: 20px;
+}
+.table tr > td {
+  height: 20px;
+  min-height: 20px;
+}
+.table > tbody > tr {
+  line-height: 18px; /* 20 - border:2 */
+}
+.credit {
+  color: #888;
+  font-size: 90%;
+  text-align: center;
+  margin-top: 20px;
+}
+</style>
+</head>
+<body>
+<div class="loading">
+  <div class="text"></div>
+</div>
+<div class="container">
+  <div class="control">
+    <!-- button 之间不留空隙 -->
+    <button onclick="addRow(1)"
+    >add col</button><button onclick="delRow(1)"
+    >del col</button><button onclick="addRow(2)"
+    >add row</button><button onclick="delRow(2)"
+    >del row</button><button onclick="importData()"
+    >import</button><button onclick="exportData()"
+    >export</button><button id="calculate" onclick="calculate()"
+    >calculate</button>
+  </div>
+  <table id="o" class="table hidden"></table>
+  <div class="credit">
+    logic: 硫化氢 | UI: I could fran
+  </div>
+</div>
+
+<!-- 计算密集型任务, 用 worker 线程执行, 避免卡住 UI -->
+<script id="worker" type="app/worker">
+let x, y, x_r_c, y_r_c, x_r, y_r, map; // 由主线程赋值
+let flag = false; // 算完了
+
+function try_x(x_n) {
+  for (let j = 0; j <= x_r[x_n].length; j++) { // 初始化留空方案
+    x_r_c[x_n][j] = 0;
+  }
+  x_r_c[x_n][0] = -1; // 因为刚开始就遍历下一情况，会漏过第一种
+  while (ne_x(x_n)) { // 判断是否还能遍历，若能则继续遍历
+    if (stu(x_n)) { // 判断是否已经不符合条件
+      if (x_n >= x) { // 判断是到头，否则继续递归
+        flag = true; // 到头退出递归
+        return 0;
+      } else {
+        try_x(x_n + 1); // 递归
+      }
+    }
+    if (flag) { return 0; }
+    // 本来这里要写回溯的代码的，但是由于后面判断不会看后面的参数，就不覆写了
+  }
+  if (!flag && x_n == 1) { // 无解
+    window.alert("NO ANS");
+    return 0;
+  }
+}
+
+function ne_x(x_n) { // 遍历下一情况，并返回值
+  let ct = 0; // 进到哪位
+  x_r_c[x_n][ct] += 1; // 遍历下一情况
+  let sum = 0; // 计算已占用空格
+  for (let j = 0; j < x_r[x_n].length; j++) {
+    sum += x_r_c[x_n][j];
+  }
+  let tot = y + 1; // 计算总可用空格数
+  for (let j = 0; j < x_r[x_n].length; j++) {
+    tot -= x_r[x_n][j] + 1;
+  }
+  while (ct < x_r[x_n].length - 1 && sum > tot) { // 若未进满位且仍不符条件，就进一位
+    x_r_c[x_n][ct] = 0; // 低位归零
+    ct += 1; // 进位
+    x_r_c[x_n][ct] += 1; // 高位加一
+    sum = 0; // 重新计算占格
+    for (let j = 0; j < x_r[x_n].length; j++) {
+      sum += x_r_c[x_n][j];
+    }
+  }
+  if (sum <= tot) { // 若符条件，就在map里输出
+    for (let j = 1; j <= y; j++) { // 归零
+      map[x_n][j] = 0;
+    }
+    ct = 1; // 标记输出到哪一位了 // 懒得声明其他变量就拿之前用剩下的了，差不多也是位数的意思
+    for (let j = 0; j < x_r[x_n].length; j++) {
+      ct += x_r_c[x_n][j]; // 输出前置空格
+      for (let i = ct; i < ct + x_r[x_n][j]; i++) { // 输出中间实心
+        map[x_n][i] = 1;
+      }
+      ct += x_r[x_n][j] + 1; // 实心与实心之间的至少存在一个空格
+    }
+  }
+  return (sum <= tot); // 返回是否还没到头
+}
+
+function stu(x_n) { // 检查当前是否已经不符合要求
+  let ct = 0;
+  for (let i = 1; i <= y; i++) {
+    ct = 0;
+    y_r_c[i] = [0];
+    for (let j = 1; j <= x_n; j++) {
+      if (map[j][i] == 0) {
+        if (j == 1) { // 首位零不管
+        } else if (map[j - 1][i] == 0) { // 连续零不管
+        } else { // 新零要管，他分开了连续的两段
+          if (y_r_c[i][ct] < y_r[i][ct]) { // 没有满y轴的要求就断了
+            return false;
+          }
+          ct++; // 新增一段
+          y_r_c[i][ct] = 0; // 新增的归零
+        }
+      } else { // 实心都管
+        y_r_c[i][ct] += 1; // 尾端加一
+        if (y_r_c[i][ct] > y_r[i][ct]) { // 尾端长度已经超了要求
+          return false;
+        }
+        if (ct > y_r[i].length - 1) { // 段数已经超了要求
+          return false;
+        }
+      }
+    }
+  }
+  return true;
+}
+
+self.addEventListener('message', e => {
+  x = e.data.x;
+  y = e.data.y;
+  x_r = e.data.x_r;
+  y_r = e.data.y_r;
+  x_r_c = e.data.x_r_c;
+  y_r_c = e.data.y_r_c;
+  map = e.data.map;
+  flag = false;
+  try_x(1); // 开始硬核计算
+  self.postMessage({ map })
+}, false);
+</script>
+
+<script>
+let x = 0; // 棋盘大小
+let y = 0;
+let x_r = []; // 纵列要求 // 如x_r[1]=[1,2,3]表示第1列依次有且只有三段连续且长度依次为1,2,3
+let y_r = []; // 横行要求 // 含义同
+let x_r_c = []; // 纵列留空 // 表示每一个连续段前留空，段尾预留的一空不计此处
+let y_r_c = []; // 横行校验 // 含义同横行要求
+let map = [];
+let calculateTimeout = null;
+const calculateDelay = 300; // 延时 300 ms
+
+// worker 线程的 url
+const workerBlob = new Blob([document.querySelector('#worker').textContent]);
+const workerUrl = window.URL.createObjectURL(workerBlob);
+
+const loading = {
+  el: document.querySelector('.loading'),
+  cal: document.querySelector('#calculate'),
+  table: document.getElementById('o'),
+  show () {
+    console.log('show');
+    this.table.classList.add('hidden');
+    this.el.classList.remove('hidden');
+    this.cal.setAttribute('disabled', 'true');
+  },
+  hide () {
+    console.log('hide');
+    this.el.classList.add('hidden');
+    setTimeout(() => {
+      this.cal.removeAttribute('disabled');
+    }, 1000)
+  }
+}
+
+// 避免改变窗口高度后滚动条又出现
+window.addEventListener('resize', function () {
+  const table = document.getElementById('o');
+  table.classList.add('hidden');
+  clearTimeout(this.timeout);
+  this.timeout = setTimeout(() => {
+    table.classList.remove('hidden');
+  }, 100)
+})
+
+// 输出
+function show() {
+  const table = document.getElementById('o');
+  table.classList.add('hidden');
+  const buf = ["<thead><tr><th></th>"];
+  for (let i = 1; i <= x; i++) {
+    buf.push("<th><div contenteditable='true' id='x" + i + "'>" + x_r[i].join("<br>") + "</div></th>");
+  }
+  buf.push("</tr></thead><tbody>");
+  for (let i = 1; i <= y; i++) {
+    buf.push("<tr><td><div contenteditable='true' id='y" + i + "'>" + y_r[i].join(" ") + "</div></td>");
+    for (let j = 1; j <= x; j++) {
+      if (map[j][i] > 0) {
+        buf.push("<td class='filled'></td>");
+      } else {
+        buf.push("<td></td>");
+      }
+    }
+    buf.push("</tr>");
+  }
+  buf.push("</tbody>");
+  table.innerHTML = buf.join("");
+  setTimeout(() => {
+    table.classList.remove('hidden');
+    loading.hide();
+  }, 50) // 50ms 延时消除水平滚动条, 原理不明.
+}
+
+// test: {"x":[[2, 3, 1], [3, 3, 7], [2, 5, 6], [6, 6, 1, 1], [3, 2, 3, 1, 1], [4, 3, 8, 1], [4, 15, 1], [6, 1, 1, 9, 2], [6, 9, 3], [4, 7, 2, 1], [2, 5, 6, 1], [1, 2, 5, 1], [1, 4, 5, 3], [1, 9, 1], [6, 10], [2, 3, 1, 3, 4], [2, 6, 3, 4], [2, 4, 3], [5, 7, 3], [1, 1, 1, 2, 2], [1, 3, 1], [2, 5, 2], [3, 2, 3], [5, 5, 3], [5, 4, 4]], "y": [[3, 3, 2, 6], [3, 3, 1, 2, 4], [1, 9, 3], [9, 1, 2], [3, 3, 2], [3, 3, 5], [6, 1, 5], [8, 3, 3], [2, 2, 1, 1, 1, 1, 1], [2, 2, 4, 1, 1, 4], [3, 1, 9, 1, 1], [4, 6, 1, 1, 2], [10, 4], [9, 7], [10, 1, 3, 2], [3, 4, 6], [16], [14], [4, 5, 1], [2, 5, 1], [1, 1, 6, 1], [2, 1, 4, 1], [1, 3, 8, 3], [1, 6, 4], [3, 5, 3, 3]]}
+
+function importData () {
+  const str = window.prompt('输入 JSON 数据, 如 {"x": [[1], [2]], "y": [[2], [1]]}');
+  try {
+    const data = JSON.parse(str);
+    x_r = [0, ...data.x];
+    y_r = [0, ...data.y];
+    x = data.x.length;
+    y = data.y.length;
+    clearMap();
+    show();
+  } catch (e) {
+    console.error(e);
+    window.alert('数据格式有误');
+  }
+}
+
+function exportData () {
+  const data = {
+    x: x_r.slice(1),
+    y: y_r.slice(1)
+  };
+  const textarea = document.createElement('textarea');
+  textarea.value = JSON.stringify(data);
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand('copy');
+  document.body.removeChild(textarea);
+  window.alert('Data copied to clipboard')
+}
+
+function clearMap() {
+  for (let i = 1; i <= x; i++) {
+    map[i] = [];
+    for (let j = 1; j <= y; j++) {
+      map[i][j] = 0;
+    }
+  }
+}
+
+// 初始化
+function start() {
+  x = 40;
+  y = 40;
+  x_r = [];
+  y_r = [];
+  /*for(let i=1;i<=x;i++){
+    x_r[i]=[i];
+  }
+  for(let i=1;i<=y;i++){
+    y_r[i]=[i];
+  }*/
+  x_r=[0,[24],[25],[27],[28],[31],[32],[35],[36],[26,7],[5,6,13,3,6],[6,4,1,12,4,6],[5,5,2,11,2,1,6],[6,4,1,1,1,9,1,2,7],[5,4,1,3,1,8,1,2,7],[5,4,1,3,1,8,2,1,7],[5,3,1,3,2,7,2,1,7],[5,3,1,3,2,8,1,2,6],[4,3,1,2,3,8,1,2,6],[4,3,1,2,4,2,5,1,2,6],[4,2,1,7,1,6,1,2,6],[3,2,1,7,1,6,2,1,6],[1,2,1,1,8,8,1,2,5],[3,1,2,8,8,1,2,5],[5,1,1,2,4,9,1,2,5],[6,7,2,9,1,2,5],[6,3,5,10,1,2,4],[6,2,1,16,2,1,4],[6,1,1,3,1,11,1,1,4],[6,1,1,3,2,10,1,1,4],[6,1,1,2,2,10,1,1,3],[5,1,1,2,2,9,2,1,2],[5,1,1,2,4,9,1,2,2],[4,1,1,7,9,1,2,1],[2,1,1,7,9,1,1,1],[2,1,2,4,9,1,1,1],[2,1,2,5,6,2,1,1],[2,1,7,5,1,3],[2,6,3,2],[3,5,3],[6]];
+  y_r=[0,[5],[9,6],[11,10],[26],[15,11],[7,3,11],[6,6,1,11],[5,10,1,1],[18,14],[11,1,3,3],[10,11,8,2],[10,2,1,1,2,1],[9,1,11,8,2],[12,25,1],[9,6,4,5,2,5],[11,2,6,2,4,4],[13,7,2,9],[12,12,14],[13,10,1,11],[15,2,3,2],[21,13],[19,14],[18,17],[37],[37],[38],[38],[10,23],[9,6,14,1],[8,3,7,3,4],[8,2,2,7,6,1],[8,11,5,1],[9,10,6],[16,12,1],[21,3],[33],[32],[28],[23],[13]];
+  for (let i = 1; i <= y; i++) {
+    map[i] = [];
+    for (let j = 1; j <= y; j++) {
+      map[i][j] = 0;
+    }
+  }
+  show();
+}
+
+// 防抖
+function calculate() { // 计算
+  loading.show();
+  clearTimeout(calculateTimeout)
+  calculateTimeout = setTimeout(() => {
+    console.log('calculating...')
+    let x_c = 0;
+    for (let i = 1; i <= x; i++) { // 获取x_r 并计数
+      let str = document.getElementById("x" + i).innerHTML.replace(/<\/div>/g, "");
+      str = str.replace(/<div><br>/g, "");
+      str = str.replace(/<div>/g, "<br>");
+      x_r[i] = str.split("<br>");
+      x_r_c[i] = [];
+      for (let j = 0; j < x_r[i].length; j++) {
+        x_r[i][j] = Number(x_r[i][j]);
+        if (x_r[i][j] <= 0) {
+          x_r[i].splice(j, 1);
+        } else {
+          x_c += x_r[i][j];
+        }
+        x_r_c[i][j] = 0;
+      }
+      x_r_c[i][0] = -1;
+    }
+    let y_c = 0;
+    for (let i = 1; i <= y; i++) { // 获取y_r 并计数
+      y_r[i] = document.getElementById("y" + i).innerHTML.split(" ");
+      for (let j = 0; j < y_r[i].length; j++) {
+        y_r[i][j] = Number(y_r[i][j]);
+        y_c += y_r[i][j];
+      }
+    }
+    if (y_c != x_c) { // 若x总和与y的不等
+      window.alert("请检查是否输入有误");
+    } else {
+      for (let i = 1; i <= y; i++) {
+        map[i] = [];
+        for (let j = 1; j <= y; j++) {
+          map[i][j] = 0;
+        }
+      }
+      // 启动新线程
+      const worker = new Worker(workerUrl);
+      worker.onmessage = e => {
+        map = e.data.map;
+        show(); // 打印
+        worker.terminate(); // 手动关闭 worker
+      }
+      worker.postMessage({
+        x, y, x_r, y_r, x_r_c, y_r_c, map
+      })
+    }
+  }, calculateDelay);
+}
+
+function addRow(i) { // 更改棋盘大小
+  if (i == 1) {
+    x++;
+    x_r[x] = [x];
+  } else {
+    y++;
+    y_r[y] = [y];
+  }
+  for (let i = 1; i <= x; i++) {
+    map[i] = [];
+    for (let j = 1; j <= y; j++) {
+      map[i][j] = 0;
+    }
+  }
+  show();
+}
+
+function delRow(i) { // 更改棋盘大小
+  if (i == 1) {
+    x--;
+  } else {
+    y--;
+  }
+  for (let i = 1; i <= y; i++) {
+    map[i] = [];
+    for (let j = 1; j <= y; j++) {
+      map[i][j] = 0;
+    }
+  }
+  show();
+}
+
+start();
+</script>
+</body>
+</html>
