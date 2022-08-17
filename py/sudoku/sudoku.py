@@ -3,7 +3,7 @@
 
 stack = []
 tries = 0
-found = False
+solutions = 0
 
 def fit(sudoku, i, j, n):
     global tries
@@ -21,10 +21,10 @@ def fit(sudoku, i, j, n):
 
 def recur(sudoku, d):
     global stack
-    global found
+    global solutions
     if d == len(stack):
         log(sudoku)
-        found = True
+        solutions += 1
     else:
         i = stack[d][0]
         j = stack[d][1]
@@ -43,8 +43,7 @@ def solve(sudoku):
                 stack.append((i, j))
     print('given numbers: %d\n' % (81-len(stack)))
     recur(sudoku, 0)
-    if not found:
-        print('no solution')
+    print('found %d solution(s)' % solutions)
     print('total tries: %d' % tries)
 
 def check(sudoku):
@@ -85,7 +84,7 @@ if __name__ == '__main__':
         [0, 0, 0, 8, 9, 0, 0, 0, 0],
         [0, 0, 3, 0, 1, 7, 0, 0, 4]
     ]
-    sudoku = read()
+    #sudoku = read()
     check(sudoku)
     log(sudoku)
     solve(sudoku)
