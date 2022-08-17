@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title></title>
+<style>
+body {
+  position: relative;
+  min-height: calc(100vh - 16px);
+}
+* {
+  box-sizing: border-box;
+}
+.draggable {
+  height: 96px;
+  width: 96px;
+  cursor: move;
+  position: absolute;
+  color: #fff;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+.d-1 {
+  background: #ace;
+  top: 0;
+  left: 0;
+  clip-path: polygon(0 33.33%, 33.33% 33.33%, 33.33% 0, 66.67% 0, 66.67% 33.33%, 100% 33.33%, 100% 66.67%, 66.67% 66.67%, 66.67% 100%, 33.33% 100%, 33.33% 66.67%, 0 66.67%);
+}
+.d-2 {
+  background: #eca;
+  top: 0;
+  left: 96px;
+  clip-path: polygon(0 0, 33.33% 0, 33.33% 66.67%, 100% 66.67%, 100% 100%, 0 100%);
+  justify-content: flex-start;
+  padding-left: 10px;
+}
+.d-3 {
+  background: #aec;
+  top: 0;
+  left: 192px;
+  clip-path: polygon(33.33% 66.67%, 33.33% 33.33%, 66.67% 33.33%, 66.67% 0, 100% 0, 100% 66.67%, 66.67% 66.67%, 66.67% 100%, 0 100%, 0 66.67%);
+}
+.d-4 {
+  background: #cea;
+  top: 0;
+  left: 288px;
+  clip-path: polygon(100% 33.33%, 100% 100%, 66.67% 100%, 66.67% 66.67%, 33.33% 66.67%, 33.33% 100%, 0 100%, 0 33.33%);
+}
+.d-5 {
+  width: 128px;
+  height: 128px;
+  background: #cae;
+  top: 0;
+  left: 384px;
+  clip-path: polygon(25% 50%, 25% 0, 50% 0, 50% 75%, 25% 75%, 25% 100%, 0 100%, 0 50%);
+  justify-content: flex-start;
+  padding-left: 40px;
+}
+.d-6 {
+  background: #eac;
+  top: 0;
+  left: 480px;
+  clip-path: polygon(0 33.33%, 0 0, 100% 0, 100% 33.33%, 66.67% 33.33%, 66.67% 100%, 33.33% 100%, 33.33% 33.33%);
+}
+.d-7 {
+  background: #a26;
+  width: 32px;
+  height: 160px;
+  left: 0;
+  top: 96px;
+}
+.d-8 {
+  background: #a62;
+  left: 96px;
+  top: 96px;
+  clip-path: polygon(100% 0, 100% 33.33%, 66.67% 33.33%, 66.67% 100%, 33.33% 100%, 33.33% 66.67%, 0 66.67%, 0 33.33%, 33.33% 33.33%, 33.33% 0);
+}
+.d-9 {
+  background: #26a;
+  left: 192px;
+  top: 96px;
+  clip-path: polygon(66.67% 0, 66.67% 66.67%, 100% 66.67%, 100% 100%, 33.33% 100%, 33.33% 33.33%, 0 33.33%, 0 0);
+}
+.d-10 {
+  width: 128px;
+  height: 128px;
+  background: #2a6;
+  left: 288px;
+  top: 96px;
+  clip-path: polygon(25% 25%, 25% 0, 50% 0, 50% 100%, 25% 100%, 25% 50%, 0 50%, 0 25%);
+  justify-content: flex-start;
+  padding-left: 40px;
+}
+.d-11 {
+  width: 128px;
+  height: 128px;
+  background: #ccc;
+  left: 384px;
+  top: 128px;
+  clip-path: polygon(25% 0, 25% 75%, 50% 75%, 50% 100%, 0 100%, 0 0);
+  justify-content: flex-start;
+  padding-left: 8px;
+}
+.d-12 {
+  background: #222;
+  left: 480px;
+  top: 96px;
+  clip-path: polygon(66.67% 0, 66.67% 66.67%, 33.33% 66.67%, 33.33% 100%, 0 100%, 0 0);
+  justify-content: flex-start;
+  padding-left: 20px;
+}
+.container {
+  position: absolute;
+  left: 255px;
+  top: 255px;
+  height: 258px;
+  width: 258px;
+  border: 1px solid #aaa;
+}
+.container::after {
+  content: '';
+  position: absolute;
+  height: 62px;
+  width: 62px;
+  left: 96px;
+  top: 96px;
+  border: 1px solid #aaa;
+}
+</style>
+</head>
+<body>
+<div class="draggable d-1">1</div>
+<div class="draggable d-2">2</div>
+<div class="draggable d-3">3</div>
+<div class="draggable d-4">4</div>
+<div class="draggable d-5">5</div>
+<div class="draggable d-6">6</div>
+<div class="draggable d-7">7</div>
+<div class="draggable d-8">8</div>
+<div class="draggable d-9">9</div>
+<div class="draggable d-10">10</div>
+<div class="draggable d-11">11</div>
+<div class="draggable d-12">12</div>
+<div class="container"></div>
+<script>
+function between(x, a, b) {
+  return Math.max(a, Math.min(b, x))
+}
+// 网格吸附
+function round(x, step) {
+  return Math.round(x / step) * step
+}
+function draggable(box) {
+  box.onmousedown = function(e) {
+    const { clientX, clientY } = e
+    const xmin = -box.parentNode.offsetLeft
+    const xmax = xmin + window.innerWidth - box.offsetWidth
+    const ymin = -box.parentNode.offsetTop
+    const ymax = ymin + window.innerHeight - box.offsetHeight
+    const x = clientX - box.offsetLeft
+    const y = clientY - box.offsetTop
+    box.style.zIndex = '2'
+    box.style.transition = 'none'
+    if (box.setCapture) {
+      box.setCapture()
+    }
+    document.onmousemove = function(e) {
+      const left = between(e.clientX - x, xmin, xmax)
+      const top = between(e.clientY - y, ymin, ymax)
+      box.style.left = left + 'px'
+      box.style.top = top + 'px'
+    }
+    document.onmouseup = function(e) {
+      if (e.clientX === clientX && e.clientY === clientY) {
+        if (e.button === 0) { // left click
+          transform(box, { rotate: 90 })
+        } else if (e.button === 2) { // right click
+          transform(box, { mirror: -1 })
+        }
+      }
+
+      const left = between(e.clientX - x, xmin, xmax)
+      const top = between(e.clientY - y, ymin, ymax)
+      box.style.left = round(left, 32) + 'px'
+      box.style.top = round(top, 32) + 'px'
+      box.style.transition = 'left .3s ease, top .3s ease'
+
+      // drag
+      this.onmouseup = null
+      this.onmousemove = null
+      box.style.zIndex = '1'
+      if (box.releaseCapture) {
+        box.releaseCapture()
+      }
+    }
+  }
+}
+
+function transform (box, { rotate = 0, mirror = 1 }) {
+    const deg = box.rotateDeg || 0
+    const newDeg = (deg + rotate) % 360
+    box.rotateDeg = newDeg
+
+    const isMirror = box.isMirror || 1
+    const newMirror = mirror * isMirror
+    box.isMirror = newMirror
+
+    box.style.transform = `rotate(${newDeg}deg) scale(${newMirror}, 1)`
+}
+
+
+[...document.getElementsByClassName('draggable')].forEach(draggable)
+document.addEventListener('contextmenu', e => e.preventDefault()) // 禁用右键菜单
+</script>
+</body>
+</html>
