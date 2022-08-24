@@ -84,7 +84,7 @@ if __name__ == '__main__':
         [0, 0, 0, 8, 9, 0, 0, 0, 0],
         [0, 0, 3, 0, 1, 7, 0, 0, 4]
     ]
-    #sudoku = read()
+    sudoku = read()
     check(sudoku)
     log(sudoku)
     solve(sudoku)
