@@ -27,7 +27,7 @@ class Article {
 
 public:
 	// 载入
-	void read(const string &filename) {
+	void read(const string &filename, int begin = 1, int end = 0x7fffffff) {
 		ifstream ifs(filename, ios::in);
 		if (!ifs) {
 			cerr << "error: cannot open file '" << filename << "'. "
@@ -35,7 +35,9 @@ public:
 			exit(1);
 		}
 		String line;
-		while (getline(ifs, line)) {
+		for (int i = 1; getline(ifs, line); ++i) {
+            if (i < begin) continue;
+            else if (i > end) break;
 			text.push_back(line);
 			// 计算一行文字的宽度并缓存
 			int w = 0;
@@ -91,9 +93,11 @@ class Game {
 	Article article;
 
 public:
-	Game(const char *filename): line(0), col(0), x(0), loaded_cnt(0) {
+	Game(const char *filename, int begin = 1, int end = 0x7fffffff):
+        line(0), col(0), x(0), loaded_cnt(0)
+    {
 		setlocale(LC_ALL, "");		// 使用系统 locale
-		article.read(filename);
+		article.read(filename, begin, end);
 		screen_clear();
 
 		// 在画面范围内打印
@@ -166,7 +170,7 @@ private:
 			cursor_down(h);
 			sum += h;
 		}
-	
+
 		printf( "\r--------------------\n"
 				"time:      %dm %ds\n"
 				"speed:     %.2fkpm\n"
@@ -311,14 +315,20 @@ private:
 
 int main(int argc, char *argv[])
 {
-	if (argc != 2) {
+	if (argc == 1) {
 		cout << "Typing practice. Choose your favorite article!\n"
 			"usage: typing [filename]\n";
 		return 0;
 	}
 	//logger.open("typing.log", ios::out);
 
-	Game game(argv[1]);
+    if (argc == 2) {
+        Game game(argv[1]);
+    } else if (argc == 3) {
+        Game game(argv[1], atoi(argv[2]));
+    } else if (argc == 4) {
+        Game game(argv[1], atoi(argv[2]), atoi(argv[3]));
+    }
 	return 0;
 }
 
