@@ -10,7 +10,7 @@
 #include "str.h"	// String
 #include <clocale>	// setlocale()
 #include <cctype>	// isspace()
-#include <ctime>	// time()
+//#include <ctime>	// time()
 #include <vector>
 #include <stack>
 #include <iostream>
@@ -35,6 +35,7 @@ public:
 			exit(1);
 		}
 		String line;
+        text.clear();
 		for (int i = 1; getline(ifs, line); ++i) {
             if (i < begin) continue;
             else if (i > end) break;
@@ -72,6 +73,10 @@ public:
 		return widths[line];
 	}
 
+    bool is_end(int line, int col) const {
+        return line == size() - 1 && col == get(line).size();
+    }
+
 };
 
 enum Status {
@@ -86,6 +91,9 @@ enum Status {
 enum Ctrl {NONE, CONTINUE, BREAK, RETURN};
 
 class Game {
+    const char *filename;
+    int begin, end;
+    bool need_restart;
 	int line, col, x;
 	int loaded_cnt;
 	struct { int correct = 0, error = 0, backspace = 0; } statistics;
@@ -94,8 +102,22 @@ class Game {
 
 public:
 	Game(const char *filename, int begin = 1, int end = 0x7fffffff):
-        line(0), col(0), x(0), loaded_cnt(0)
+        filename(filename), begin(begin), end(end), line(0), col(0), x(0), loaded_cnt(0), need_restart(false)
     {
+        do {
+            restart();
+        } while (need_restart);
+    }
+
+private:
+    void restart() {
+        this->line = 0;
+        this->col = 0;
+        this->x = 0;
+        this->loaded_cnt = 0;
+        this->need_restart = false;
+        this->statistics = { 0, 0, 0 };
+
 		setlocale(LC_ALL, "");		// 使用系统 locale
 		article.read(filename, begin, end);
 		screen_clear();
@@ -113,15 +135,16 @@ public:
 		}
 		cout << STYLE_RESET;
 		play();
-	}
+    }
 
-private:
 	void play() {
 		toggle_flush();
 		int c = getchar();
-		time_t begin = time(NULL);
+		long begin = time_ms();
 		control(c);
-		summary(begin);
+        if (!need_restart) {
+            summary(begin);
+        }
 		toggle_flush();
 	}
 
@@ -155,11 +178,12 @@ private:
 		}
 	}
 
-	void summary(time_t begin)
+	void summary(long begin)
 	{
-		int s = time(NULL) - begin;
-		int mm = s / 60;
-		int ss = s % 60;
+		int s = time_ms() - begin;
+		int mm = s / 60000;
+		int ss = s / 1000;
+        int ms = s % 1000;
 		int typed = statistics.correct + statistics.error;
 
 		// 滚动到页尾
@@ -172,13 +196,13 @@ private:
 		}
 
 		printf( "\r--------------------\n"
-				"time:      %dm %ds\n"
+				"time:      %dm %ds %dms\n"
 				"speed:     %.2fkpm\n"
 				"accuracy:  %.2f%%\n"
 				"typed:     %d\n"
 				"correct:   %d\n"
 				"backspace: %d\n",
-			mm, ss, 60.0*typed/s, 100.0*statistics.correct/typed,
+			mm, ss, ms, 60000.0*typed/s, 100.0*statistics.correct/typed,
 			typed, statistics.correct,
 			statistics.backspace);
 	}
@@ -188,14 +212,22 @@ private:
 		Ctrl ctrl = NONE;
 		// ctrl-d to exit
 		while (key != 4) {
-			if (key == 127)
+			if (key == 127) {
 				ctrl = onBackspace();
-			else if (key == '\n')
+            } else if (key == 21) { // ctrl-u
+                need_restart = true;
+                return;
+			} else if (key == '\n') {
 				ctrl = onReturn();
-			else {
+			} else {
 				Char answer = article.get(line, col);
-				if (answer)
+				if (answer) {
 					ctrl = onInput(key, buf, answer);
+                } else if (article.is_end(line, col)) {
+                    // 跟打结束, 按任意键退出
+                    putchar('\n');
+                    ctrl = BREAK;
+                }
 //				else
 //					cout << "ignore: " << key << endl;
 			}

@@ -89,6 +89,8 @@ void cursor_hide()
 		cursor_show();\
 	} while (0)
 
+#define time_ms GetTickCount
+
 #endif // __MINGW32__
 
 /******** linux ********/
@@ -96,6 +98,7 @@ void cursor_hide()
 #ifdef __linux__
 
 #include <sys/ioctl.h>	// winsize, ioctl()
+#include <sys/time.h>   // gettimeofday
 #include <termios.h>	// termios
 
 struct winsize tty;
@@ -146,6 +149,12 @@ int kbhit() {
 		usleep((ms)*1000);\
 		toggle_flush();\
 	} while (0)
+
+long time_ms() {
+    struct timeval t;
+    gettimeofday(&t, NULL);
+    return t.tv_sec * 1000 + t.tv_usec / 1000;
+}
 
 // POSIX escape sequences
 
