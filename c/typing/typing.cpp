@@ -10,7 +10,8 @@
 #include "str.h"	// String
 #include <clocale>	// setlocale()
 #include <cctype>	// isspace()
-//#include <ctime>	// time()
+#include <cstring>  // strcmp()
+#include <ctime>    // rand()
 #include <vector>
 #include <stack>
 #include <iostream>
@@ -26,14 +27,19 @@ class Article {
 	vector<int> widths;
 
 public:
-	// 载入
-	void read(const string &filename, int begin = 1, int end = 0x7fffffff) {
-		ifstream ifs(filename, ios::in);
+    void read_stream(const string &filename, ifstream &ifs) {
+		ifs.open(filename, ios::in);
 		if (!ifs) {
 			cerr << "error: cannot open file '" << filename << "'. "
 				"does this file exist?\n";
 			exit(1);
 		}
+    }
+
+	// 载入
+	void read(const string &filename, int begin = 1, int end = 0x7fffffff) {
+        ifstream ifs;
+        read_stream(filename, ifs);
 		String line;
         text.clear();
 		for (int i = 1; getline(ifs, line); ++i) {
@@ -52,7 +58,34 @@ public:
 				w = 1; // 空行也有一格的高度
 			widths.push_back(w);
 		}
+        ifs.close();
 	}
+
+    // 随机文本
+    void rand(const string &filename, int rand_cnt = 10) {
+        ifstream ifs;
+        read_stream(filename, ifs);
+        Char ch;
+        vector<Char> str;
+        while (ifs >> ch) {
+            if (!ch.is_ascii()) {
+                str.push_back(ch);
+            }
+        }
+
+        // 均匀随机 k 排列: shuffle
+        int cnt = 0, n = str.size();
+        rand_cnt = std::min(n, rand_cnt);
+        for (int i = 0; i < rand_cnt; ++i) {
+            int j = i + std::rand() % (n-i);
+            std::swap(str[i], str[j]);
+        }
+        vector<Char> slice = vector<Char>(str.begin(), str.begin() + rand_cnt);
+        text.clear();
+        text.push_back(String(slice));
+        widths.push_back(rand_cnt * 2);
+        ifs.close();
+    }
 
 	int size() const {
 		return text.size();
@@ -92,7 +125,7 @@ enum Ctrl {NONE, CONTINUE, BREAK, RETURN};
 
 class Game {
     const char *filename;
-    int begin, end;
+    int begin, end, rand_cnt;
     bool need_restart;
 	int line, col, x;
 	int loaded_cnt;
@@ -101,8 +134,8 @@ class Game {
 	Article article;
 
 public:
-	Game(const char *filename, int begin = 1, int end = 0x7fffffff):
-        filename(filename), begin(begin), end(end), line(0), col(0), x(0), loaded_cnt(0), need_restart(false)
+	Game(const char *filename, int begin = 1, int end = 0x7fffffff, int rand_cnt = -1):
+        filename(filename), begin(begin), end(end), rand_cnt(rand_cnt)
     {
         do {
             restart();
@@ -119,10 +152,19 @@ private:
         this->statistics = { 0, 0, 0 };
 
 		setlocale(LC_ALL, "");		// 使用系统 locale
-		article.read(filename, begin, end);
-		screen_clear();
+        if (rand_cnt == -1) {
+            article.read(filename, begin, end);
+        } else {
+            article.rand(filename, rand_cnt);
+        }
 
-		// 在画面范围内打印
+        print();
+		play();
+    }
+
+    // 在画面范围内打印
+    void print() {
+		screen_clear();
 		get_ttysize();
 		cout << STYLE_DIM;
 		if (loaded_cnt < article.size()) {
@@ -134,7 +176,6 @@ private:
 			cursor_up(h - height(loaded_cnt));
 		}
 		cout << STYLE_RESET;
-		play();
     }
 
 	void play() {
@@ -195,16 +236,47 @@ private:
 			sum += h;
 		}
 
-		printf( "\r--------------------\n"
-				"time:      %dm %ds %dms\n"
-				"speed:     %.2fkpm\n"
-				"accuracy:  %.2f%%\n"
-				"typed:     %d\n"
-				"correct:   %d\n"
-				"backspace: %d\n",
-			mm, ss, ms, 60000.0*typed/s, 100.0*statistics.correct/typed,
-			typed, statistics.correct,
-			statistics.backspace);
+        float avg;
+        int count;
+        fstream fs("typing.log", ios::in);
+        if (fs) {
+            // 存在则读取, 然后清空文件重新打开
+            fs >> avg >> count;
+            fs.close();
+            fs.open("typing.log", ios::out | ios::trunc);
+        } else {
+            // 不存在则创建
+            avg = 0.0f;
+            count = 0;
+            fs.close();
+            fs.open("typing.log", ios::out);
+        }
+
+        float accuracy = 100.0 * statistics.correct / typed;
+        float speed = 600.0 * statistics.correct * accuracy / s;
+        avg = (avg * count + speed) / (++count);
+        fs << avg << '\n' << count << endl;
+        fs.close();
+
+		printf(
+            "\r--------------------\n"
+            "lesson:    %d\n"
+            "time:      %dm %ds %dms\n"
+            "speed:     %.2fkpm\n"
+            "avg_speed: %.2fkpm\n"
+            "accuracy:  %.2f%%\n"
+            "typed:     %d\n"
+            "correct:   %d\n"
+            "backspace: %d\n",
+			count,
+            mm, ss, ms,
+            speed,
+            avg,
+            accuracy,
+			typed,
+            statistics.correct,
+			statistics.backspace
+        );
 	}
 
 	void control(int key) {
@@ -225,7 +297,6 @@ private:
 					ctrl = onInput(key, buf, answer);
                 } else if (article.is_end(line, col)) {
                     // 跟打结束, 按任意键退出
-                    putchar('\n');
                     ctrl = BREAK;
                 }
 //				else
@@ -349,17 +420,26 @@ int main(int argc, char *argv[])
 {
 	if (argc == 1) {
 		cout << "Typing practice. Choose your favorite article!\n"
-			"usage: typing [filename]\n";
+			"usage: typing [filename] [begin line] [end line]\n";
 		return 0;
 	}
 	//logger.open("typing.log", ios::out);
 
+    srand(time(NULL));
     if (argc == 2) {
         Game game(argv[1]);
     } else if (argc == 3) {
-        Game game(argv[1], atoi(argv[2]));
+        if (strcmp(argv[2], "-r") == 0) {
+            Game game(argv[1], 1, 0x7fffffff, 10);
+        } else {
+            Game game(argv[1], atoi(argv[2]));
+        }
     } else if (argc == 4) {
-        Game game(argv[1], atoi(argv[2]), atoi(argv[3]));
+        if (strcmp(argv[2], "-r") == 0) {
+            Game game(argv[1], 1, 0x7fffffff, atoi(argv[3]));
+        } else {
+            Game game(argv[1], atoi(argv[2]), atoi(argv[3]));
+        }
     }
 	return 0;
 }

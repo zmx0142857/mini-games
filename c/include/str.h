@@ -166,6 +166,8 @@ class String {
 public:
 	String() {} 
 
+    String(const std::vector<Char> &data): data(data) {}
+
 	String(const std::string &str) {
 		std::istringstream is(str);
 		decode(is);
@@ -195,6 +197,10 @@ public:
 	const Char &operator[](size_t index) const {
 		return data[index];
 	}
+
+    void push_back(const Char &ch) {
+        data.push_back(ch);
+    }
 
 	static void test() {
 		using namespace std;
