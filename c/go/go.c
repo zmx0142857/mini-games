@@ -5,9 +5,6 @@
 #define WIDTH 19
 #define HEIGHT 19
 #define SIZE (WIDTH*HEIGHT)
-#define BLANK 0
-#define BLACK 1
-#define WHITE 2
 #define BOARD_Y (HEIGHT-y-1)
 #define BOARD_X (2*(x+1))
 #define MSG_LINE (HEIGHT+1)
@@ -15,14 +12,15 @@
 	do { mvprint(MSG_LINE, 0, args); line_clear(); } while (0)
 
 char board[WIDTH][HEIGHT];
-char color = BLACK;
 char visited[WIDTH][HEIGHT];
 int qx[SIZE], qy[SIZE]; // 理论上循环队列空间需要加一, 但这里不可能用尽
 int qfront = 0, qrear = 0;
 int sx[SIZE], sy[SIZE];
 int top = 0;
 
-enum Rule { RULE_GO, RULE_GOMOKU };
+enum Color { BLANK, BLACK, WHITE };
+enum Color color = BLACK;
+enum Rule { RULE_GO, RULE_GOMOKU }; // 围棋规则, 五子棋规则
 enum Rule rule = RULE_GO;
 
 void print_board()
@@ -103,8 +101,8 @@ bool bounded(int x, int y)
 	return x >= 0 && y >= 0 && x < WIDTH && y < HEIGHT;
 }
 
-// 判断 (x,y) 所在的连通分量是否被围死
-int isdead(int x, int y)
+// 围棋: 判断 (x,y) 所在的连通分量是否被围死
+int go_isdead(int x, int y)
 {
 	top = 0;
 	if (!bounded(x, y) || board[x][y] != color)
@@ -148,10 +146,10 @@ int isdead(int x, int y)
 	return top;
 }
 
-// 吃掉含 (x,y) 的一个连通分量
-int do_eat(int x, int y)
+// 围棋: 吃掉含 (x,y) 的一个连通分量
+int go_do_eat(int x, int y)
 {
-	int ret = top = isdead(x, y);
+	int ret = top = go_isdead(x, y);
 	while (top--) {
 		x = sx[top];
 		y = sy[top];
@@ -160,20 +158,23 @@ int do_eat(int x, int y)
 	return ret;
 }
 
-// 落子于 (x,y), 返回吃子数
-int eat(int x, int y)
+// 围棋: 落子于 (x,y), 返回吃子数
+int go_eat(int x, int y)
 {
 	color = flip(color);
-	int ret = do_eat(x, y+1) + do_eat(x, y-1) + do_eat(x-1, y) + do_eat(x+1, y);
+	int ret
+        = go_do_eat(x, y+1)
+        + go_do_eat(x, y-1)
+        + go_do_eat(x-1, y)
+        + go_do_eat(x+1, y);
 	if (ret)
 		MSG("提子: %d", ret);
 	color = flip(color);
 	return ret;
 }
 
-// 五子棋: 检查各个方向
-// 若游戏结束, 返回 true
-bool check_directions(int x, int y) {
+// 五子棋: 检查各个方向, 若游戏结束, 返回 true
+bool gomoku_check_directions(int x, int y) {
     int dx[8] = { 0, 1, 1, 1 };
     int dy[8] = { 1, 1, 0, -1 };
     for (int i = 0; i < 4; ++i) {
@@ -198,11 +199,10 @@ bool check_directions(int x, int y) {
     return false;
 }
 
-// 五子棋规则
-// 若游戏结束, 返回 true
+// 五子棋: 若游戏结束, 返回 true
 bool rule_gomoku(int x, int y) {
     set_board(x, y, color);
-    if (check_directions(x, y)) {
+    if (gomoku_check_directions(x, y)) {
         MSG(color == BLACK ? "黑胜" : "白胜");
         return true;
     }
@@ -210,12 +210,11 @@ bool rule_gomoku(int x, int y) {
     return false;
 }
 
-// 围棋规则
-// 若游戏结束, 返回 true
+// 围棋: 若游戏结束, 返回 true
 bool rule_go(int x, int y) {
     board[x][y] = color; // try
-    int flag_dead = isdead(x, y);
-    int flag_eat = eat(x, y);
+    int flag_dead = go_isdead(x, y);
+    int flag_eat = go_eat(x, y);
     if (flag_dead && !flag_eat) {
         board[x][y] = BLANK; // restore
         MSG("此处不可落子");
