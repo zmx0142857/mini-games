@@ -22,6 +22,9 @@ int qfront = 0, qrear = 0;
 int sx[SIZE], sy[SIZE];
 int top = 0;
 
+enum Rule { RULE_GO, RULE_GOMOKU };
+enum Rule rule = RULE_GO;
+
 void print_board()
 {
 	int lineno = HEIGHT;
@@ -92,7 +95,7 @@ void set_board(int x, int y, int color)
 
 char flip(char c)
 {
-	return !(c-1) + 1;
+    return c == BLACK ? WHITE : BLACK;
 }
 
 bool bounded(int x, int y)
@@ -163,51 +166,129 @@ int eat(int x, int y)
 	color = flip(color);
 	int ret = do_eat(x, y+1) + do_eat(x, y-1) + do_eat(x-1, y) + do_eat(x+1, y);
 	if (ret)
-		MSG("%d eaten", ret);
+		MSG("提子: %d", ret);
 	color = flip(color);
 	return ret;
 }
 
-// 试图在 (x,y) 落子
-void move(int x, int y)
-{
-	if (!bounded(x, y) || board[x][y]) {
-		MSG("invalid move");
-	} else {
-		board[x][y] = color; // try
-		int flag_dead = isdead(x, y);
-		int flag_eat = eat(x, y);
-		if (flag_dead && !flag_eat) {
-			board[x][y] = BLANK; // restore
-			MSG("dead position");
-		} else {
-			set_board(x, y, color);
-			color = flip(color);
-		}
+// 五子棋: 检查各个方向
+// 若游戏结束, 返回 true
+bool check_directions(int x, int y) {
+    int dx[8] = { 0, 1, 1, 1 };
+    int dy[8] = { 1, 1, 0, -1 };
+    for (int i = 0; i < 4; ++i) {
+        int offset;
+        int count = 1;
+        // 沿正方向看
+        for (offset = 1; offset < 5; ++offset) {
+            int xx = x + dx[i] * offset;
+            int yy = y + dy[i] * offset;
+            if (!bounded(xx, yy) || board[xx][yy] != color) break;
+            ++count;
+        }
+        // 沿反方向看
+        for (offset = -1; offset > -5; --offset) {
+            int xx = x + dx[i] * offset;
+            int yy = y + dy[i] * offset;
+            if (!bounded(xx, yy) || board[xx][yy] != color) break;
+            ++count;
+        }
+        if (count >= 5) return true;
+    }
+    return false;
+}
+
+// 五子棋规则
+// 若游戏结束, 返回 true
+bool rule_gomoku(int x, int y) {
+    set_board(x, y, color);
+    if (check_directions(x, y)) {
+        MSG(color == BLACK ? "黑胜" : "白胜");
+        return true;
+    }
+    color = flip(color);
+    return false;
+}
+
+// 围棋规则
+// 若游戏结束, 返回 true
+bool rule_go(int x, int y) {
+    board[x][y] = color; // try
+    int flag_dead = isdead(x, y);
+    int flag_eat = eat(x, y);
+    if (flag_dead && !flag_eat) {
+        board[x][y] = BLANK; // restore
+        MSG("此处不可落子");
+    } else {
+        set_board(x, y, color);
+        color = flip(color);
 	}
+    return false;
+}
+
+// 试图在 (x,y) 落子
+// 若游戏结束, 返回 true
+bool move(int x, int y)
+{
+    if (!bounded(x, y)) {
+        MSG("超出棋盘范围");
+        return false;
+    }
+	if (board[x][y]) {
+        MSG("此处已有落子");
+        return false;
+    }
+    if (rule == RULE_GO) {
+        return rule_go(x, y);
+    } else if (rule == RULE_GOMOKU) {
+        return rule_gomoku(x, y);
+    }
 }
 
 void play()
 {
 	memset(board, BLANK, sizeof(board));
 	print_board();
-	int x, y;
-	while (
-		cursor_goto(MSG_LINE+1, 0),
-		line_clear(),
-		scanf("%d %d", &x, &y) == 2
-	) {
-		move(x-1, y-1);
-	}
+    MSG("%s: %s",
+        (rule == RULE_GO ? "围棋" : "五子棋"),
+        "方向键或 WASD 移动, 空格落子"
+    );
+	int x = WIDTH / 2;
+    int y = HEIGHT / 2;
+    cursor_goto(BOARD_Y, BOARD_X);
+
+    int key = getch();
+    while (key != -1) {
+        if (key >= 'A' && key <= 'Z') key += 32;
+        key = arrow_key(key);
+        switch (key) {
+            case 'w': if (bounded(x, y+1)) ++y; break;
+            case 's': if (bounded(x, y-1)) --y; break;
+            case 'a': if (bounded(x-1, y)) --x; break;
+            case 'd': if (bounded(x+1, y)) ++x; break;
+            case ' ': if (move(x, y)) return; break;
+        }
+		// MSG("%c%d", x+'A', y+1);
+        cursor_goto(BOARD_Y, BOARD_X);
+        key = getch();
+    }
 }
 
-int main()
+int main(int argc, char **argv)
 {
+    if (argc == 2) {
+        // 启用五子棋规则
+        if (strcmp(argv[1], "-5") == 0) {
+            rule = RULE_GOMOKU;
+        }
+    }
+
 	screen_size(HEIGHT + 3, WIDTH*2 + 10);
 	bool is_game_over = false;
     while (!is_game_over) {
 		play();
 		is_game_over = true;
     }
+    cursor_goto(MSG_LINE+1, 0);
 	return 0;
 }

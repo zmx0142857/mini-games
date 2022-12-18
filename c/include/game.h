@@ -91,6 +91,21 @@ void cursor_hide()
 
 #define time_ms GetTickCount
 
+// 返回 wsad 表示上下左右, 否则返回 key 自身
+int arrow_key(int key) {
+    if (key == -32) {
+        key = getch();
+        // HPKM = 上下左右
+        switch (key) {
+            case 'H': return 'w';
+            case 'P': return 's';
+            case 'K': return 'a';
+            case 'M': return 'd';
+        }
+    }
+    return key;
+}
+
 #endif // __MINGW32__
 
 /******** linux ********/
@@ -199,6 +214,24 @@ long time_ms() {
 #define cursor_left(n)		printf("\033[%dD", (n))
 #define cursor_hide()		printf("\033[?25l");
 #define cursor_show()		printf("\033[?25h");
+
+// 返回 wsad 表示上下左右, 否则返回 key 自身
+int arrow_key(int key) {
+   if (key == 27) {
+       key = getch();
+       if (key != '[')
+           return key;
+       key = getch();
+       // ABDC = 上下左右
+       switch (key) {
+           case 'A': return 'w';
+           case 'B': return 's';
+           case 'D': return 'a';
+           case 'C': return 'd';
+       }
+   }
+   return key;
+}
 
 void screen_size(unsigned height, unsigned width)
 {
