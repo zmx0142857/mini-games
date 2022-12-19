@@ -51,7 +51,7 @@ void screen_size(int y, int x)
 }
 */
 
-#ifdef EXTERN_GAME_H
+#ifndef EXTERN_GAME_H
 void screen_size(unsigned height, unsigned width)
 {
 	char buf[100];
@@ -63,7 +63,7 @@ void screen_size(unsigned height, unsigned width)
 extern void screen_size(unsigned height, unsigned width);
 #endif
 
-#ifdef EXTERN_GAME_H
+#ifndef EXTERN_GAME_H
 void cursor_hide()
 {
 	CONSOLE_CURSOR_INFO info;
@@ -76,7 +76,7 @@ extern void cursor_hide();
 #endif
 
 // 返回 wsad 表示上下左右, 否则返回 key 自身
-#ifdef EXTERN_GAME_H
+#ifndef EXTERN_GAME_H
 int arrow_key(int key)
 {
     if (key == -32) {
@@ -133,7 +133,7 @@ struct winsize tty;
 #define get_ttysize()		ioctl(0, TIOCGWINSZ, &tty)
 
 // enable/disable buffered I/O
-#ifdef EXTERN_GAME_H
+#ifndef EXTERN_GAME_H
 void toggle_flush()
 {
 	static struct termios on, off;
@@ -154,7 +154,7 @@ void toggle_flush()
 }
 #endif
 
-#ifdef EXTERN_GAME_H
+#ifndef EXTERN_GAME_H
 int getch()
 {
 	toggle_flush();
@@ -166,7 +166,7 @@ int getch()
 extern int getch();
 #endif
 
-#ifdef EXTERN_GAME_H
+#ifndef EXTERN_GAME_H
 int kbhit()
 {
 	int oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
@@ -189,7 +189,7 @@ extern int kbhit();
 		toggle_flush();\
 	} while (0)
 
-#ifdef EXTERN_GAME_H
+#ifndef EXTERN_GAME_H
 long time_ms()
 {
     struct timeval t;
@@ -245,7 +245,7 @@ extern long time_ms();
 #define cursor_show()		printf("\033[?25h");
 
 // 返回 wsad 表示上下左右, 否则返回 key 自身
-#ifdef EXTERN_GAME_H
+#ifndef EXTERN_GAME_H
 int arrow_key(int key)
 {
    if (key == 27) {
@@ -267,7 +267,7 @@ int arrow_key(int key)
 int arrow_key(int key);
 #endif
 
-#ifdef EXTERN_GAME_H
+#ifndef EXTERN_GAME_H
 void screen_size(unsigned height, unsigned width)
 {
 	char buf[100];
@@ -324,7 +324,7 @@ void screen_size(unsigned height, unsigned width);
 		: (value > sup ? (value = sup)\
 		: value))
 
-#ifdef EXTERN_GAME_H
+#ifndef EXTERN_GAME_H
 void play_loading(unsigned loop)
 {
     unsigned i, j;

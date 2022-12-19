@@ -1,4 +1,3 @@
-#define EXTERN_GAME_H
 #include "main.h"
 
 enum Color color = BLACK;

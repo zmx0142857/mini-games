@@ -25,9 +25,9 @@ bin/digits: digits/digits.c
 	mkdir -p bin
 	$(CC) -o $@ $^
 
-bin/go: go/go.c
+bin/go: go/*.c include/game.h
 	mkdir -p bin
-	$(CC) $(CFLAG) -o $@ $^
+	$(CC) $(CFLAG) -o $@ go/*.c
 
 bin/morse: morse/morse.cpp
 	mkdir -p bin
@@ -46,9 +46,9 @@ bin/snake: snake/snake.c
 	mkdir -p bin
 	$(CC) $(CFLAG) -o $@ $^
 
-bin/sokoban/sokoban: sokoban/sokoban.c
+bin/sokoban/sokoban: sokoban/*.c include/game.h
 	mkdir -p bin/sokoban
-	$(CC) $(CFLAG) -o $@ $^
+	$(CC) $(CFLAG) -o $@ sokoban/*.c
 	cp -r sokoban/level bin/sokoban
 
 bin/sphere: sphere/sphere.c

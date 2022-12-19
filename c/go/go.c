@@ -1,5 +1,9 @@
+#define EXTERN_GAME_H
 #include "main.h"
 
+char visited[WIDTH][HEIGHT];
+int qx[SIZE], qy[SIZE]; // 理论上循环队列空间需要加一, 但这里不可能用尽
+int sx[SIZE], sy[SIZE];
 int qfront = 0, qrear = 0, top = 0;
 
 // 围棋: 判断 (x,y) 所在的连通分量是否被围死

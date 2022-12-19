@@ -1,3 +1,4 @@
+#define EXTERN_GAME_H
 #include "main.h"
 
 // 五子棋: 检查各个方向, 若游戏结束, 返回 true

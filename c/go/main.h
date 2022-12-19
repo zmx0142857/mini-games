@@ -15,9 +15,6 @@
 	do { mvprint(MSG_LINE, 0, args); line_clear(); } while (0)
 
 char board[WIDTH][HEIGHT];
-char visited[WIDTH][HEIGHT];
-int qx[SIZE], qy[SIZE]; // 理论上循环队列空间需要加一, 但这里不可能用尽
-int sx[SIZE], sy[SIZE];
 enum Color { BLANK, BLACK, WHITE };
 enum Rule { RULE_GO, RULE_GOMOKU }; // 围棋规则, 五子棋规则
 
