@@ -28,11 +28,15 @@ int gomoku_score_map[] = {
 enum GomokuType gomoku_line_type(int x, int y, int direction, enum Color color) {
     static int dx[8] = { 0, 1, 1, 1 };
     static int dy[8] = { 1, 1, 0, -1 };
-    int count = 1, offset, xx, yy;
     enum Color rival_color = flip(color);
-    bool blank_l = false, blank_r = false;
-    int block_l = 0, block_r = 0;
-    // 沿正方向看
+
+    int block_l = 0, block_r = 0; // 阻挡物的位置
+    bool block_blank_l = false, block_blank_r = false; // 与阻挡物间是否有空隙
+    bool blank_l = false, blank_r = false; // 是否遇到空白
+    int count_l = 1, count_r = 1; // 左右计数, 二者取大
+    int offset, xx, yy;
+
+    // 沿正方向看 (r)
     for (offset = 1; offset <= 5; ++offset) {
         xx = x + dx[direction] * offset;
         yy = y + dy[direction] * offset;
@@ -40,33 +44,41 @@ enum GomokuType gomoku_line_type(int x, int y, int direction, enum Color color) 
             block_r = offset;
             break;
         } else if (board[xx][yy] == BLANK) {
+            block_blank_r = true;
+            if (blank_r) break;
             blank_r = true;
         } else { // board[xx][yy] == color
-            blank_r = false;
-            ++count;
+            block_blank_r = false;
+            if (!blank_r) ++count_r;
+            ++count_l;
         }
     }
-    // 沿反方向看
+
+    // 沿反方向看 (l)
     for (offset = -1; offset >= -5; --offset) {
         xx = x + dx[direction] * offset;
         yy = y + dy[direction] * offset;
         if (!bounded(xx, yy) || board[xx][yy] == rival_color) {
-            block_r = offset;
+            block_l = offset;
             break;
         } else if (board[xx][yy] == BLANK) {
-            blank_r = true;
+            block_blank_l = true;
+            if (blank_l) break;
+            blank_l = true;
         } else { // board[xx][yy] == color
-            blank_r = false;
-            ++count;
+            block_blank_l = false;
+            if (!blank_l) ++count_l;
+            ++count_r;
         }
     }
 
-    bool dead_l = block_l && !blank_l;
-    bool dead_r = block_r && !blank_r;
+    bool dead_l = block_l && !block_blank_l;
+    bool dead_r = block_r && !block_blank_r;
     if (block_l == 0) block_l = -INF;
     if (block_r == 0) block_r = INF;
 
     int type = 0;
+    int count = count_l > count_r ? count_l : count_r;
     if (count <= 4) {
         type += (count - 1) * 4;
         if (block_r - block_l > 5) { // 有足够空隙
@@ -76,7 +88,7 @@ enum GomokuType gomoku_line_type(int x, int y, int direction, enum Color color) 
                 type += 0; // LIVE
             }
         } else { // 没有足够空隙
-            if (blank_l || blank_r) { // 是否留有空白
+            if (block_blank_l || block_blank_r) { // 是否留有空白
                 type += 2; // SLEEP
             } else {
                 type += 3; // DEAD
@@ -146,6 +158,12 @@ void gomoku_ai_next_move()
 
     int x = best_x, y = best_y;
     set_board(x, y, color);
+
+    for (int i = 0; i < 4; ++i) {
+        int type1 = gomoku_line_type(x, y, i, color);
+        int type2 = gomoku_line_type(x, y, i, flip(color));
+        mvprint(MSG_LINE + 1 + i, 0, "%d %d", type1, type2);
+    }
 }
 
 // 五子棋: 检查各个方向, 若游戏结束, 返回 true
