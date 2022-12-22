@@ -2,6 +2,7 @@
 
 enum Color color = BLACK;
 enum Rule rule = RULE_GO;
+bool is_ai = false;
 
 void print_board()
 {
@@ -131,11 +132,18 @@ void play()
 
 int main(int argc, char **argv)
 {
-    if (argc == 2) {
+    if (argc >= 2) {
         // 启用五子棋规则
         if (strcmp(argv[1], "-5") == 0) {
             rule = RULE_GOMOKU;
         }
+    }
+    if (argc >= 3) {
+        // 启用 AI
+        if (strcmp(argv[2], "-ai") == 0) {
+            is_ai = true;
+        }
+
     }
 
 	screen_size(HEIGHT + 3, WIDTH*2 + 10);

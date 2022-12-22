@@ -26,5 +26,6 @@ void set_board(int x, int y, int color);
 enum Color flip(enum Color c);
 bool rule_go(int x, int y);
 bool rule_gomoku(int x, int y);
+bool is_ai;
 
 #endif // MAIN_H
