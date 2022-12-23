@@ -146,6 +146,8 @@ int main(int argc, char **argv)
 
     }
 
+    srand(time_ms(NULL));
+
 	screen_size(HEIGHT + 3, WIDTH*2 + 10);
 	bool is_game_over = false;
     while (!is_game_over) {
