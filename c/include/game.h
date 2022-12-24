@@ -129,7 +129,12 @@ extern int arrow_key(int key);
 #include <sys/time.h>   // gettimeofday
 #include <termios.h>	// termios
 
+#ifndef EXTERN_GAME_H
 struct winsize tty;
+#else
+extern struct winsize tty;
+#endif
+
 #define get_ttysize()		ioctl(0, TIOCGWINSZ, &tty)
 
 // enable/disable buffered I/O
@@ -152,6 +157,8 @@ void toggle_flush()
 	}
 	flush_on = !flush_on;
 }
+#else
+extern void toggle_flush();
 #endif
 
 #ifndef EXTERN_GAME_H

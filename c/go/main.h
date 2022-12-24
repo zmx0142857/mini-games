@@ -14,18 +14,18 @@
 #define MSG(args...)\
 	do { mvprint(MSG_LINE, 0, args); line_clear(); } while (0)
 
-char board[WIDTH][HEIGHT];
 enum Color { BLANK, BLACK, WHITE };
 enum Rule { RULE_GO, RULE_GOMOKU }; // 围棋规则, 五子棋规则
 
-enum Color color;
-enum Rule rule;
+extern char board[WIDTH][HEIGHT];
+extern enum Color color;
+extern enum Rule rule;
+extern bool is_ai;
 
 bool bounded(int x, int y);
 void set_board(int x, int y, int color);
 enum Color flip(enum Color c);
 bool rule_go(int x, int y);
 bool rule_gomoku(int x, int y);
-bool is_ai;
 
 #endif // MAIN_H

@@ -1,5 +1,6 @@
 #include "main.h"
 
+char board[WIDTH][HEIGHT];
 enum Color color = BLACK;
 enum Rule rule = RULE_GO;
 bool is_ai = false;
