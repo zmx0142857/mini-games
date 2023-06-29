@@ -62,3 +62,8 @@ bin/tetris: tetris/tetris.c
 bin/typing: typing/typing.cpp
 	mkdir -p bin
 	$(CXX) $(CFLAG) -o $@ $^
+
+bin/lightoff/lightoff: lightoff/main.c
+	mkdir -p bin/lightoff
+	$(CC) $(CFLAG) -o $@ $^
+	cp lightoff/test.txt bin/lightoff
