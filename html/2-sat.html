@@ -1,0 +1,142 @@
+<title>2-SAT 宾果游戏</title>
+
+<style>
+.board {
+  margin: 20px auto;
+}
+.board td {
+  text-align: center;
+}
+.cond--error {
+  background-color: #fcc;
+}
+.coord--highlight {
+  background-color: gold;
+}
+</style>
+
+<h1>
+  <center>2-SAT 宾果游戏</center>
+</h1>
+<center>五个连成一线的话你就是 2-SAT 领域大神</center>
+
+<table class="board">
+<script>
+window.SIZE = 5
+const board = Array.from({ length: SIZE + 1 }).map((_, i) => Array.from({ length: SIZE + 1 }).map((_, j) => {
+  if (i === 0 && j === 0) {
+    return ''
+  } else if (i === 0) {
+    return String(j)
+  } else if (j === 0) {
+    return String(i)
+  } else {
+    return `<input type="checkbox" data-coord="${i},${j}" />`
+  }
+})).map(row => '<tr>' + row.map(cell => `<td>${cell}</td>`).join('\n') + '</tr>').join('\n')
+document.write(board)
+</script>
+</table>
+
+<p>
+  <center class="conditions"></center>
+</p>
+
+<p>
+  <center>inspired by 破壁人五号</center>
+</p>
+
+<script>
+const $ = el => document.querySelector(el)
+const $conditions = $('.conditions')
+const $board = $('.board')
+const selected = [0, 0]
+let errors = []
+let checkboxes = []
+
+const conditions = [
+  [ [1, 1, 0], [4, 4, 0] ],
+  [ [1, 2, 1], [1, 3, 1] ],
+  [ [1, 3, 1], [3, 1, 0] ],
+  [ [1, 4, 1], [1, 2, 0] ],
+  [ [1, 5, 0], [3, 2, 0] ],
+
+  [ [2, 1, 1], [1, 2, 1] ],
+  [ [2, 2, 1], [3, 2, 0] ],
+  [ [2, 3, 1], [4, 4, 0] ],
+  [ [2, 4, 0], [5, 2, 0] ],
+  [ [2, 5, 0], [5, 4, 0] ],
+
+  [ [3, 1, 1], [5, 1, 0] ],
+  [ [3, 2, 0], [3, 1, 1] ],
+  [ [3, 3, 1], [3, 5, 1] ],
+  [ [3, 4, 0], [3, 2, 0] ],
+  [ [3, 5, 0], [5, 4, 1] ],
+
+  [ [4, 1, 1], [1, 2, 1] ],
+  [ [4, 2, 0], [1, 2, 0] ],
+  [ [4, 3, 0], [1, 3, 1] ],
+  [ [4, 4, 1], [5, 2, 0] ],
+  [ [4, 5, 1], [3, 5, 0] ],
+
+  [ [5, 1, 1], [1, 3, 0] ],
+  [ [5, 2, 1], [5, 1, 1] ],
+  [ [5, 3, 1], [4, 2, 0] ],
+  [ [5, 4, 1], [3, 4, 1] ],
+  [ [5, 5, 0], [5, 2, 0] ],
+]
+
+const printConditions = () => {
+  const html = conditions.map((cond, i) => (
+    `<span class="${errors.includes(i) ? 'cond--error' : ''}">
+    <input type="checkbox" disabled ${cond[0][2] ? 'checked' : ''} />
+    <span class="${cond[0][0] === selected[0] && cond[0][1] === selected[1] ? 'coord--highlight' : ''}">(${cond[0][0]}, ${cond[0][1]})</span>
+    or
+    <input type="checkbox" disabled ${cond[1][2] ? 'checked' : ''} />
+    <span class="${cond[1][0] === selected[0] && cond[1][1] === selected[1] ? 'coord--highlight' : ''}">(${cond[1][0]}, ${cond[1][1]})</span></span>`
+  )).join('<br>\n')
+  $conditions.innerHTML = html
+}
+
+const checkSat = () => {
+  checkboxes = []
+  ;[...$board.querySelectorAll('input')].forEach(checkbox => {
+    const [i, j] = checkbox.dataset.coord.split(',').map(n => Number(n))
+    checkboxes[i] = checkboxes[i] || []
+    checkboxes[i][j] = checkbox.checked ? 1 : 0
+  })
+  errors = conditions.map((cond, i) => {
+    const ok = checkboxes[cond[0][0]][cond[0][1]] === cond[0][2] || checkboxes[cond[1][0]][cond[1][1]] === cond[1][2]
+    return ok ? undefined : i
+  }).filter(v => v !== undefined)
+}
+
+const checkBingo = () => {
+  const range = Array.from({ length: SIZE }).map((_, i) => i+1)
+  if (range.some(i => range.every(j => checkboxes[i][j]))) return true // 某行
+  if (range.some(j => range.every(i => checkboxes[i][j]))) return true // 某列
+  if (range.every(i => checkboxes[i][i])) return true // 主对角线
+  if (range.every(i => checkboxes[i][SIZE+1-i])) return true // 副对角线
+  return false
+}
+
+const update = () => {
+  checkSat()
+  printConditions()
+  if (errors.length === 0 && checkBingo()) {
+    setTimeout(() => {
+      alert('Bingo! 点击确定重载页面')
+      location.reload()
+    }, 300)
+  }
+}
+
+$board.addEventListener('click', (e) => {
+  if (e.target.tagName.toLowerCase() !== 'input') return
+  const coord = e.target.dataset.coord.split(',').map(n => Number(n))
+  Object.assign(selected, coord)
+  update()
+})
+
+update()
+</script>
