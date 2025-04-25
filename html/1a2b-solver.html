@@ -1,0 +1,204 @@
+<style>
+* {
+  box-sizing: border-box;
+}
+:root {
+  --color-blue: #1976d2;
+}
+body {
+  background: #222;
+  display: flex;
+  flex-direction: column;
+}
+.main {
+  color: #eee;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.btn-group {
+  margin: auto;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: 2px;
+  font-size: 14px;
+  cursor: pointer;
+  color: #eee;
+  background-color: transparent;
+  border: 1px solid #888;
+  opacity: 0.9;
+  margin-top: 8px;
+}
+.btn.btn-primary {
+  background-color: var(--color-blue);
+  border-color: var(--color-blue);
+}
+.btn:active {
+  opacity: 1;
+}
+</style>
+
+<div class="main"></div>
+<div class="btn-group">
+  <button id="btn-guess" class="btn btn-primary">guess</button>
+  <button id="btn-reset" class="btn">reset</button>
+</div>
+
+<script>
+// 检查答案并给出 1a2b
+const check = (num, ans) => {
+  num = num.split('')
+  ans = ans.split('')
+  const a = (num[0] === ans[0]) + (num[1] === ans[1]) + (num[2] === ans[2]) + (num[3] === ans[3])
+  num.sort()
+  ans.sort()
+  let i = 0, j = 0, b = 0
+  while (i < 4 && j < 4) {
+    if (num[i] < ans[j]) {
+      i += 1
+    } else if (num[i] > ans[j]) {
+      j += 1
+    } else {
+      i += 1
+      j += 1
+      b += 1
+    }
+  }
+  return [a, b-a].join('')
+}
+
+// 生成 10 选 4 的所有排列
+let initNums
+const init = () => {
+  if (initNums) return initNums.slice()
+  const buf = []
+  const nums = []
+
+  const dfs = (len) => {
+    if (len === 4) return nums.push(buf.join(''))
+    for (let i = 0; i < 10; ++i) {
+      if (buf.some(v => v === i)) continue
+      buf.push(i)
+      dfs(len+1)
+      buf.pop()
+    }
+  }
+  dfs(0)
+  // console.log('nums', nums)
+  initNums = nums.slice()
+  return nums
+}
+
+// 从数组中选择一个数
+const choose = (arr) => {
+  return arr[Math.random() * arr.length | 0]
+}
+
+let nums = init()
+const dict = {
+  '00': '0567',
+  '01': '0325',
+  '02': '0145',
+  '03': '0145',
+  '04': '0143',
+  '10': '0256',
+  '11': '0235',
+  '12': '0135',
+  '13': '0123',
+  '20': '0135',
+  '21': '0135',
+  '22': '0124',
+  '30': '0135',
+}
+
+const smartChoose = (nums, guessCount, lastRes) => {
+  let bestNum
+  if (guessCount === 1) {
+    bestNum = dict[lastRes]
+    if (bestNum) return bestNum
+  }
+
+  let mindx = Infinity
+  const searchRange = guessCount === 1 ? init() : nums
+  searchRange.forEach((num, i) => {
+    if (guessCount === 1 && i % 100 === 0) {
+      console.log((i / searchRange.length * 100 | 0) + '%')
+    }
+    const counts = []
+    for (const res of Object.keys(dict)) {
+      const count = nums.filter(v => check(v, num) === res).length
+      counts.push(count)
+    }
+    let sum = 0, sumsq = 0
+    counts.forEach(count => {
+      sum += count
+      sumsq += count * count
+    })
+    const dx = sumsq / 13 - (sum * sum / 169) // 方差
+    if (dx < mindx) {
+      mindx = dx
+      bestNum = num
+    }
+  })
+  return bestNum
+}
+
+// 自动求解
+// 已知的最坏情况: 9314, 9157, 9407, 8409 猜 7 次
+const test = () => {
+  nums = init()
+  const ans = choose(nums)
+  let num = '1234'
+  let count = 0
+  let res
+  while (true) {
+    // 猜一次, 缩小答案范围
+    res = check(num, ans)
+    nums = nums.filter(v => check(num, v) === res)
+    console.log(num, res[0] + 'A' + res[1] + 'B')
+    count += 1
+    if (num === ans) break
+    if (nums.length === 0) throw new Error('conflict!')
+    num = smartChoose(nums, count, res)
+  }
+  console.log('count:', count)
+}
+
+const $ = el => document.querySelector(el)
+const $main = $('.main')
+const $btnGuess = $('#btn-guess')
+const $btnReset = $('#btn-reset')
+const history = [{ guess: '1234' }]
+
+const render = () => {
+  $main.innerHTML = history.map(row => `
+    <div class="row">
+      <span>${row.guess} ${row.res || ''}</span> ${row.res ? '' : '<input id="input" placeholder="结果为 1A2B 时，输入 12"/>'}
+    </div>
+  `).join('\n')
+}
+
+$btnGuess.onclick = () => {
+  const $input = $('#input')
+  const last = history.slice(-1)[0]
+  last.res = $input.value.trim()
+  if (!Object.keys(dict).includes(last.res)) return alert('invalid input')
+  nums = nums.filter(v => check(last.guess, v) === last.res)
+  if (!nums.length) return alert('conflict!')
+  const guess = smartChoose(nums, history.length, last.res)
+  history.push({ guess })
+  render()
+}
+
+$btnReset.onclick = () => {
+  nums = init()
+  history.length = 0
+  history.push({ guess: '1234' })
+  render()
+}
+
+render()
+</script>

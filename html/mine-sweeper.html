@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>扫雷</title>
+<style>
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+body {
+  margin: 40px;
+}
+.input {
+  width: 100%;
+}
+.output {
+  margin-top: 20px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.output td {
+  border: 1px solid #aaa;
+  width: 30px;
+  height: 27px;
+  line-height: 27px;
+  text-align: center;
+  background: #ddd;
+  font-weight: bold;
+  font-size: 18px;
+}
+.cell-0 {
+  color: transparent;
+}
+.cell-1 {
+  color: #00f;
+}
+.cell-2 {
+  color: #080;
+}
+.cell-3 {
+  color: #f00;
+}
+.cell-4 {
+  color: #008;
+}
+.cell-5 {
+  color: #800;
+}
+.cell-6 {
+  color: #088;
+}
+.cell-7 {
+  color: #000;
+}
+.cell-8 {
+  color: #888;
+}
+.cell-unknown {
+  position: relative;
+  color: transparent;
+}
+.cell-unknown::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 29px;
+  height: 29px;
+  border-top: 3px solid #fff;
+  border-right: 3px solid #fff;
+  border-left: 3px solid #ccc;
+  border-bottom: 3px solid #ccc;
+  background: #eee;
+}
+</style>
+</head>
+<body>
+
+<main class="main">
+<textarea class="input" rows="10" value="
+"></textarea>
+
+<table class="output"></table>
+</main>
+
+<script>
+const $ = el => document.querySelector(el)
+const $input = $('.input')
+const $output = $('.output')
+
+const render = (board) => {
+  const className = (td) => {
+    if (td === '*') return 'mine'
+    if (td === '?') return 'unknown'
+    return td
+  }
+  const content = (td) => {
+    if (td === '*') return '\u{1f4a3}'
+    return td
+  }
+  $output.innerHTML = board.map(tr =>
+    `<tr>${tr.map(td =>
+      `<td class="cell-${className(td)}">${content(td)}</td>`
+    ).join('')}</tr>`
+  ).join('\n')
+}
+
+$input.value = '0123\n4567\n8*??'
+
+render($input.value.split('\n').map(row => [...row]))
+</script>
+</body>
+</html>
