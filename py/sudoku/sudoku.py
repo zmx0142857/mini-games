@@ -2,10 +2,33 @@
 # -*- coding: utf-8 -*-
 
 stack = []
+rows = [0 for _ in range(9)]
+cols = [0 for _ in range(9)]
+grids = [0 for _ in range(9)]
 tries = 0
 solutions = 0
 
-def fit(sudoku, i, j, n):
+def set_flag(i, j, n):
+    global rows
+    global cols
+    global grids
+    mask = 1 << n
+    rows[i] ^= mask
+    cols[j] ^= mask
+    grids[i//3*3+j//3] ^= mask
+
+def test_flag(i, j, n):
+    global rows
+    global cols
+    global grids
+    global tries
+    tries += 1
+    mask = 1 << n
+    conflict = (rows[i] & mask) or (cols[j] & mask) or (grids[i//3*3+j//3] & mask)
+    return not conflict
+
+'''
+def test(sudoku, i, j, n):
     global tries
     tries += 1
     for k in range(9):
@@ -18,6 +41,7 @@ def fit(sudoku, i, j, n):
             if sudoku[k][l] == n:
                 return False
     return True
+'''
 
 def recur(sudoku, d):
     global stack
@@ -29,18 +53,23 @@ def recur(sudoku, d):
         i = stack[d][0]
         j = stack[d][1]
         for n in range(9, 0, -1):
-            if (fit(sudoku, i, j, n)):
+            if test_flag(i, j, n):
                 sudoku[i][j] = n
+                set_flag(i, j, n)
                 recur(sudoku, d+1)
                 sudoku[i][j] = 0
+                set_flag(i, j, n)
 
 def solve(sudoku):
     global stack
     global tries
     for i in range(9):
         for j in range(9):
-            if sudoku[i][j] == 0:
+            n = sudoku[i][j]
+            if n == 0:
                 stack.append((i, j))
+            else:
+                set_flag(i, j, n)
     print('given numbers: %d\n' % (81-len(stack)))
     recur(sudoku, 0)
     print('found %d solution(s)' % solutions)
