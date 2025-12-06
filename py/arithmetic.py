@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/usr/bin/python3
-# -*- coding: utf-8 -*-
-
 from random import randint, choice
 from time import time
 from sys import argv
@@ -10,16 +7,21 @@ mistake = 0
 mistakes = []
 begin = time()
 beginq = begin
-a = argv[1] if len(argv) > 1 else 12
-b = argv[2] if len(argv) > 2 else 99
+if len(argv) < 3:
+    print('usage: python arithmetic.py min max [count]\nexample: python arithmetic.py 12 15')
+    exit(0)
+a = int(argv[1])
+b = int(argv[2])
+count = int(argv[3]) if len(argv) >= 4 else 15
 speed = {}
 
 def stat():
     total = correct + mistake
     print("\rcorrect: %d/%d" % (correct, total))
     if total > 0:
-        print("speed: %f questions per minute" % (60*correct/(time()-begin)))
-        print('\n'.join('%d: %f' % e for e in sorted([(k, 60*speed[k][1]/speed[k][0]) for k in speed], key=(lambda t:t[1]), reverse=True)))
+        speed_value = 60*correct/(time()-begin)
+        print(f"speed: {speed_value:.2f}")
+        print('\n'.join(f'   {v[0]}: {v[1]:.2f}' for v in sorted([(k, 60*speed[k][1]/speed[k][0]) for k in speed], key=(lambda t:t[1]), reverse=True)))
         if mistakes:
             print("mistakes: %s" % ', '.join('%d*%d' % elem for elem in set(mistakes)))
 
@@ -29,7 +31,7 @@ def get_operands(a, b):
     else:
         return randint(a,b), randint(2,9)
 
-for cnt in range(30):
+for cnt in range(count):
     i, j = get_operands(a, b)
     ans = i * j
     while True:
